@@ -7,6 +7,7 @@ import {TokenWithSanctions} from "../src/TokenWithSanctions.sol";
 contract TokenWithSanctionsTest is Test {
     TokenWithSanctions public tokenWithSanctions;
     address public owner = makeAddr("OWNER");
+    address public bannedAddress = makeAddr("BANNED_ADDRESS");
     string public name = "TokenWithSanctions";
     string public symbol = "TWS";
     function setUp() public {
@@ -24,7 +25,6 @@ contract TokenWithSanctionsTest is Test {
     }
 
     function testOnlyOwnerCanUnbanAddress() public {
-        address bannedAddress = makeAddr("BANNED_ADDRESS");
         vm.prank(owner);
         tokenWithSanctions.banAddress(bannedAddress);
         vm.expectRevert();
@@ -35,7 +35,6 @@ contract TokenWithSanctionsTest is Test {
     }
 
     function testBannedSenderCannotSendTokens() public {
-        address bannedAddress = makeAddr("BANNED_ADDRESS");
         vm.prank(owner);
         tokenWithSanctions.banAddress(bannedAddress);
         vm.expectRevert();
@@ -43,7 +42,6 @@ contract TokenWithSanctionsTest is Test {
     }
 
     function testBannedRecipientCannotBeTransferedTokens() public {
-        address bannedAddress = makeAddr("BANNED_ADDRESS");
         vm.prank(owner);
         tokenWithSanctions.banAddress(bannedAddress);
         vm.expectRevert();
