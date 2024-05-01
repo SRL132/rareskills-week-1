@@ -7,7 +7,7 @@ error TokenWithGodMode__NotOwner();
 
 /// @title Token that allows the owner to transfer tokens between addresses at will.
 /// @author Sergi Roca Laguna
-/// @notice This token has a fixed supply of 500 units. allows the owner to transfer tokens between addresses at will.
+/// @notice This token has a fixed supply of 500 units. It allows the owner to transfer tokens between addresses at will.
 /// @dev This token implements an ERC20 with fixed token supply and the ability for the owner to the owner to transfer tokens between addresses at will.
 contract TokenWithGodMode is ERC20 {
     uint256 public constant FIXED_TOKEN_SUPPLY = 500;
@@ -27,18 +27,11 @@ contract TokenWithGodMode is ERC20 {
         _mint(_owner, FIXED_TOKEN_SUPPLY);
     }
 
-    function transfer(
-        address recipient,
-        uint256 amount
-    ) public override returns (bool) {
-        return super.transfer(recipient, amount);
-    }
-
     function godTransferFrom(
         address sender,
         address recipient,
         uint256 amount
-    ) public onlyOwner returns (bool) {
+    ) public onlyOwner {
         _transfer(sender, recipient, amount);
     }
 }
