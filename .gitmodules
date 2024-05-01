@@ -1,0 +1,3 @@
+[submodule "contracts/contracts-1-token-with-sanctions/lib/forge-std"]
+	path = contracts/contracts-1-token-with-sanctions/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
