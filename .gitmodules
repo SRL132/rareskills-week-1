@@ -4,3 +4,9 @@
 [submodule "contracts/contracts-1-token-with-sanctions/lib/openzeppelin-contracts"]
 	path = contracts/contracts-1-token-with-sanctions/lib/openzeppelin-contracts
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts
+[submodule "contracts/contracts-2-token-with-god-mode/lib/forge-std"]
+	path = contracts/contracts-2-token-with-god-mode/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
+[submodule "contracts/contracts-2-token-with-god-mode/lib/openzeppelin-contracts"]
+	path = contracts/contracts-2-token-with-god-mode/lib/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts
