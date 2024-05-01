@@ -11,6 +11,8 @@ contract TokenWithSanctionsTest is Test {
     address public recipient = makeAddr("RECIPIENT");
     string public name = "TokenWithSanctions";
     string public symbol = "TWS";
+    uint256 public constant FIXED_TOKEN_SUPPLY = 500;
+
     function setUp() public {
         vm.prank(owner);
         tokenWithSanctions = new TokenWithSanctions(owner, name, symbol);
@@ -52,6 +54,6 @@ contract TokenWithSanctionsTest is Test {
     function testCannotTransferMoreThan500Tokens() public {
         vm.expectRevert();
         vm.prank(owner);
-        tokenWithSanctions.transfer(recipient, 501);
+        tokenWithSanctions.transfer(recipient, FIXED_TOKEN_SUPPLY + 1);
     }
 }

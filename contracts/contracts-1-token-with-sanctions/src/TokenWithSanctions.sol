@@ -7,9 +7,9 @@ error TokenWithSanctions__NotOwner();
 error TokenWithSanctions__SenderBanned();
 error TokenWithSanctions__RecipientBanned();
 
-/// @title Token that allows an admin to ban specified addresses from sending and receiving tokens.
+/// @title Token that allows the owner to ban specified addresses from sending and receiving tokens.
 /// @author Sergi Roca Laguna
-/// @notice This token allows to ban addresses, which will not be able to send or receive tokens.
+/// @notice This token allows the owner to ban addresses, which will not be able to send or receive tokens.
 /// @dev This token implements an ERC20 with fixed token supply and the ability to ban addresses.
 contract TokenWithSanctions is ERC20 {
     uint256 public constant FIXED_TOKEN_SUPPLY = 500;
