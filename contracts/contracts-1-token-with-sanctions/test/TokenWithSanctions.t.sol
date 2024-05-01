@@ -19,7 +19,6 @@ contract TokenWithSanctionsTest is Test {
     }
 
     function testOnlyOwnerCanBanAddress() public {
-        address bannedAddress = makeAddr("BANNED_ADDRESS");
         vm.prank(owner);
         tokenWithSanctions.banAddress(bannedAddress);
         assertTrue(tokenWithSanctions.s_bannedAddresses(bannedAddress));
