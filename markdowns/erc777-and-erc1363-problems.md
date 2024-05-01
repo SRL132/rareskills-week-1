@@ -1,5 +1,11 @@
 # ERC-777 and ERC-1363 Problems
 
+## Overview
+- ERC-777 specification ([link](https://eips.ethereum.org/EIPS/eip-777))
+- ERC-777 code ([link](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v4.9/contracts/token/ERC777/ERC777.sol))
+- ERC-1363 specification ([link](https://eips.ethereum.org/EIPS/eip-1363))
+- ERC-1363 code ([link](https://github.com/vittominacori/erc1363-payable-token/tree/master/contracts/token/ERC1363))
+
 ## What problems do ERC-777 and ERC-1363 solve?
 
 ERC-777 and ERC-1363 both address issues related to ERC-20:
