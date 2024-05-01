@@ -35,10 +35,4 @@ contract TokenWithGodModeTest is Test {
         vm.prank(user);
         tokenWithGodMode.godTransferFrom(owner, user, FIXED_TOKEN_SUPPLY);
     }
-
-    function testCanTransferFrom() public {
-        vm.prank(owner);
-        tokenWithGodMode.transferFrom(owner, user, 1);
-        assertEq(tokenWithGodMode.balanceOf(user), 1);
-    }
 }

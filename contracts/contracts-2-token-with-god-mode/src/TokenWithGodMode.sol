@@ -34,14 +34,6 @@ contract TokenWithGodMode is ERC20 {
         return super.transfer(recipient, amount);
     }
 
-    function transferFrom(
-        address sender,
-        address recipient,
-        uint256 amount
-    ) public override returns (bool) {
-        return super.transferFrom(sender, recipient, amount);
-    }
-
     function godTransferFrom(
         address sender,
         address recipient,
