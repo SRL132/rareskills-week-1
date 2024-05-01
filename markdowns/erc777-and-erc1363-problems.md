@@ -8,5 +8,5 @@ ERC-777 and ERC-1363 both address issues related to ERC-20:
 
 2. **Security of Double Transactions:** The double transactions mentioned above mean that transfer functions can be front-run. For example, if an allowance function is set for user U by mistake and the owner is trying to send a second `approve` transaction to fix it, this user can front-run to take advantage of the already implemented `approve` in order to transfer tokens before the second approval gets implemented. This effectively allows the user to transfer tokens twice.
 
-## Why was ERC-1363 introduced, and what issues are there with ERC777?
+## Why was ERC-1363 introduced, and what issues are there with ERC-777?
 ERC-777's hook functionality can potentially allow for reentrancy attacks, making the token prone to additional attack vectors. ERC-1363 was introduced to address these issues. It allows for the direct call of `onTransferReceived` functions and includes `safeTransfer` functions that ensure the target contract has the necessary functionality to act upon received tokens.
