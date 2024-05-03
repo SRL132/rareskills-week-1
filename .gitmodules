@@ -16,3 +16,6 @@
 [submodule "contracts/contracts-3-token-bonding-curve/lib/openzeppelin-contracts"]
 	path = contracts/contracts-3-token-bonding-curve/lib/openzeppelin-contracts
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts
+[submodule "contracts/contracts-3-token-bonding-curve/lib/erc1363-payable-token"]
+	path = contracts/contracts-3-token-bonding-curve/lib/erc1363-payable-token
+	url = https://github.com/vittominacori/erc1363-payable-token
