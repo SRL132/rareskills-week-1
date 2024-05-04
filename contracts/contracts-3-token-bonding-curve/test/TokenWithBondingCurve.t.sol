@@ -31,15 +31,14 @@ contract TokenWithBondingCurveTest is Test {
 
     function testCanBuyWithERC1363() public {
         vm.prank(owner);
-        erc1363.transferAndCall(address(token), 1, abi.encode(TEST_MAX_PRICE));
-        assertEq(token.balanceOf(owner), 1);
+        erc1363.transferAndCall(address(token), 3, abi.encode(TEST_MAX_PRICE));
+        assertEq(token.balanceOf(owner), 18);
     }
-
+    //TODO: FIX SALE LOGIC
     function testCanSellForERC1363() public {
-        vm.prank(owner);
-        erc1363.transferAndCall(address(token), 1, abi.encode(TEST_MAX_PRICE));
-        vm.prank(owner);
-        token.sellFor(1, address(erc1363), 1);
+        vm.startPrank(owner);
+        erc1363.transferAndCall(address(token), 3, abi.encode(TEST_MAX_PRICE));
+        token.sellFor(token.balanceOf(owner), address(erc1363), 3);
         assertEq(erc1363.balanceOf(owner), ERC_1363_INITIAL_SUPPLY);
     }
 
