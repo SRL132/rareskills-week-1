@@ -3,6 +3,7 @@ pragma solidity 0.8.24;
 import {ERC20} from "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import {IERC1363Receiver} from "openzeppelin-contracts/contracts/interfaces/IERC1363Receiver.sol";
+import {Math} from "openzeppelin-contracts/contracts/utils/math/Math.sol";
 
 /// @title Token sale and buyback with bonding curve.
 /// @author Sergi Roca Laguna
@@ -105,46 +106,32 @@ contract TokenWithBondingCurve is ERC20, IERC1363Receiver {
     }
 
     ///HELPER FUNCTIONS
+    /// @dev Function that calculates the price of the token when buying by applying the following bonding curve:
+    /// f(x) = m * (x^2)
+    /// where x is the total token supply and m is the slope factor
     /// @param _amount amount of external tokens received to purchase TBC
     /// @return _amountOfTokensBought newcalculated prices
     function _calculateBuyPrice(
         uint256 _amount
     ) private view returns (uint256 _amountOfTokensBought) {
-        //total supply of TBC
-        //f = function
-        // where x is the total token supply
-        // and m is the slope factor
-        //f(x) = m * (x^2)
         uint256 latestPrice = SLOPE_FACTOR * s_totalSupply ** 2;
         uint256 newPrice = SLOPE_FACTOR * (s_totalSupply + _amount) ** 2;
         _amountOfTokensBought = newPrice - latestPrice;
     }
+
+    /// @dev Function that calculates the price of the token when selling by applying the following bonding curve:
+    /// f(x) = m * (x^2)
+    /// where x is the total token supply and m is the slope factor
     /// @param _amount amount of external tokens received to sell TBC
     /// @return _amountOfTokensSold newcalculated prices
     function _calculateSellPrice(
         uint256 _amount
     ) private view returns (uint256 _amountOfTokensSold) {
-        //f = function
-        // where x is the total token supply
-        // and m is the slope factor
-        //f(x) = m * (x^2)
-        uint256 latestPrice = sqrt(SLOPE_FACTOR * s_totalSupply) / 2;
-        uint256 newPrice = sqrt(SLOPE_FACTOR * (s_totalSupply - _amount)) / 2;
+        uint256 latestPrice = Math.sqrt(SLOPE_FACTOR * s_totalSupply) / 2;
+        uint256 newPrice = Math.sqrt(SLOPE_FACTOR * (s_totalSupply - _amount)) /
+            2;
         _amountOfTokensSold = latestPrice - newPrice;
         return _amountOfTokensSold;
-    }
-
-    /// @dev Function to calculate the square root of a number
-    /// @param _x number to calculate the square root for
-    /// @return square root of x
-    function sqrt(uint256 _x) private pure returns (uint256) {
-        uint256 z = (_x + 1) / 2;
-        uint256 y = _x;
-        while (z < y) {
-            y = z;
-            z = (_x / z + z) / 2;
-        }
-        return y;
     }
 
     ///VIEW FUNCTIONS
