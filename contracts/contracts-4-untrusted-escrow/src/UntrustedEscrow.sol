@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.24;
 
-import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import {ReentrancyGuard} from "openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
-import {ERC165} from "openzeppelin-contracts/contracts/utils/introspection/ERC165.sol";
-import {IERC165} from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
-import {ERC165Checker} from "openzeppelin-contracts/contracts/utils/introspection/ERC165Checker.sol";
-import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "@openzeppelin/token/ERC20/IERC20.sol";
+import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import {ERC165} from "@openzeppelin/utils/introspection/ERC165.sol";
+import {IERC165} from "@openzeppelin/utils/introspection/IERC165.sol";
+import {ERC165Checker} from "@openzeppelin/utils/introspection/ERC165Checker.sol";
+import {ReentrancyGuard} from "@openzeppelin/utils/ReentrancyGuard.sol";
 
+//TODO: Revise ERC20 vulnerabilities to see if there are more wins
 /// @title Contract that implments an untrusted escrow
 /// @author Sergi Roca Laguna
 /// @notice Contract where a buyer can put an arbitrary ERC20 token into a contract and a seller can withdraw it 3 days later
@@ -87,7 +88,7 @@ contract UntrustedEscrow is ERC165, ReentrancyGuard {
     }
 
     /// @notice This function allows a buyer to deposit tokens into the contract
-    /// @dev This function allows a buyer to deposit tokens into the contract
+    /// @dev This function allows a buyer to deposit tokens into the contract. The function implements nonReentrant to avoid reentrancy attacks
     /// @param _tokenAddress The address of the token to deposit
     /// @param _amount The amount of tokens to deposit
     /// @param _price The price of the tokens
@@ -95,7 +96,7 @@ contract UntrustedEscrow is ERC165, ReentrancyGuard {
         address _tokenAddress,
         uint256 _amount,
         uint256 _price
-    ) external {
+    ) external nonReentrant {
         if (!_tokenAddress.supportsInterface(type(IERC20).interfaceId)) {
             revert UntrustedEscrow__NotERC20();
         }
