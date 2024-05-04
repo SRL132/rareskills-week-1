@@ -18,6 +18,10 @@ contract TokenWithGodMode is ERC20 {
         _;
     }
 
+    /// @dev Constructor to create a token with a fixed supply, it implements ERC20 constructor and mints an immutable supply of tokens
+    /// @param _owner address of the owner of the token
+    /// @param _name name of the token
+    /// @param _symbol symbol of the token
     constructor(
         address _owner,
         string memory _name,
@@ -26,7 +30,11 @@ contract TokenWithGodMode is ERC20 {
         i_owner = _owner;
         _mint(_owner, FIXED_TOKEN_SUPPLY);
     }
-
+    /// @notice Function that allows the owner to transfer tokens between addresses at will
+    /// @dev Function that allows the owner to directly call internal transfer function, skipping the need for an allowance
+    /// @param sender The address of the sender
+    /// @param recipient The address of the recipient
+    /// @param amount The amount of tokens to transfer
     function godTransferFrom(
         address sender,
         address recipient,

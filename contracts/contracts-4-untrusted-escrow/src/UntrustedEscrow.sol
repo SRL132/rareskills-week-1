@@ -1,33 +1,63 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.24;
 
+import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {ReentrancyGuard} from "openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
+import {ERC165} from "openzeppelin-contracts/contracts/utils/introspection/ERC165.sol";
+import {IERC165} from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
+import {ERC165Checker} from "openzeppelin-contracts/contracts/utils/introspection/ERC165Checker.sol";
+
 /// @title Contract that implments an untrusted escrow
 /// @author Sergi Roca Laguna
 /// @notice Contract where a buyer can put an arbitrary ERC20 token into a contract and a seller can withdraw it 3 days later
-/// @dev Explain to a developer any extra details
-contract UntrustedEscrow {
+/// @dev This contract implements openzeppelin's ReentrancyGuard and ERC165
+contract UntrustedEscrow is ERC165, ReentrancyGuard {
+    using ERC165Checker for address;
     error UntrustedEscrow__CannotWithdrawBefore3Days();
     error UntrustedEscrow__AmountExceedsBalance();
+    error UntrustedEscrow__TransferFailed();
+    error UntrustedEscrow__NotEnoughMoney();
+    error UntrustedEscrow__NotAContract();
+    error UntrustedEscrow__NotERC20();
 
     struct Deposit {
         address user;
         uint256 timestamp;
         uint256 amount;
+        uint256 price;
     }
+
     mapping(address depositor => mapping(address => Deposit))
         public s_depositBalances;
+
+    /// @notice This is an event to notify that a deposit has been done
+    /// @dev This event is activated when deposits are done and return the relevant data to be rendered or tracked
+    /// @param user The address of the user that made the deposit
+    /// @param token The address of the token that was deposited
+    /// @param amount The amount of tokens deposited
     event DepositDone(
         address indexed user,
         address indexed token,
         uint256 amount
     );
+
+    /// @notice This is an event to notify that a withdrawal has been done
+    /// @dev This event is activated when withdrawals are done and return the relevant data to be rendered or tracked
+    /// @param user The address of the user that made the withdrawal
+    /// @param token The address of the token that was withdrawn
+    /// @param amount The amount of tokens withdrawn
     event Withdraw(address indexed user, address indexed token, uint256 amount);
 
+    /// @notice This function allows a seller to withdraw tokens from the contract
+    /// @dev This function allows a seller to withdraw tokens from the contract, it implements a nonReentrant modifier to avoid reentrancy attacks
+    /// @param user The address of the user that made the deposit
+    /// @param token The address of the token that was deposited
+    /// @param amount The amount of tokens to withdraw
     function sellerWithdraw(
         address user,
         address token,
         uint256 amount
-    ) external payable {
+    ) external payable nonReentrant {
         if (
             block.timestamp - s_depositBalances[user][token].timestamp < 3 days
         ) {
@@ -37,15 +67,51 @@ contract UntrustedEscrow {
         if (s_depositBalances[user][token].amount < amount) {
             revert UntrustedEscrow__AmountExceedsBalance();
         }
+
+        if (msg.value < (s_depositBalances[user][token].price * amount)) {
+            revert UntrustedEscrow__NotEnoughMoney();
+        }
+
+        IERC20(token).transfer(msg.sender, amount);
+
         s_depositBalances[user][token].amount -= amount;
+        (bool success, ) = user.call{value: msg.value}("");
+        if (!success) {
+            revert UntrustedEscrow__TransferFailed();
+        }
         emit Withdraw(user, token, amount);
     }
 
-    function buyerDeposit(address tokenAddress, uint256 amount) external {
-        s_depositBalances[msg.sender][msg.sender].amount += amount;
+    /// @notice This function allows a buyer to deposit tokens into the contract
+    /// @dev This function allows a buyer to deposit tokens into the contract
+    /// @param tokenAddress The address of the token to deposit
+    /// @param amount The amount of tokens to deposit
+    /// @param price The price of the tokens
+    function buyerDeposit(
+        address tokenAddress,
+        uint256 amount,
+        uint256 price
+    ) external {
+        if (!tokenAddress.supportsInterface(type(IERC20).interfaceId)) {
+            revert UntrustedEscrow__NotERC20();
+        }
+
+        bool success = IERC20(tokenAddress).transferFrom(
+            msg.sender,
+            address(this),
+            amount
+        );
+
+        if (!success) {
+            revert UntrustedEscrow__TransferFailed();
+        }
+
+        s_depositBalances[msg.sender][tokenAddress].amount += amount;
         s_depositBalances[msg.sender][tokenAddress].timestamp = block.timestamp;
         s_depositBalances[msg.sender][tokenAddress].user = msg.sender;
         s_depositBalances[msg.sender][tokenAddress].amount = amount;
+        s_depositBalances[msg.sender][tokenAddress].price = price;
+
         emit DepositDone(msg.sender, tokenAddress, amount);
     }
 }

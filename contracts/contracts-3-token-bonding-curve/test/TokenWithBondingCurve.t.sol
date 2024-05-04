@@ -3,6 +3,7 @@ pragma solidity 0.8.24;
 
 import {Test, console} from "forge-std/Test.sol";
 import {TokenWithBondingCurve} from "../src/TokenWithBondingCurve.sol";
+import {DeployTokenWithBondingCurve} from "../script/DeployTokenWithBondingCurve.s.sol";
 import {PayableToken} from "./mocks/ERC1363.sol";
 
 contract TokenWithBondingCurveTest is Test {
@@ -34,7 +35,7 @@ contract TokenWithBondingCurveTest is Test {
         erc1363.transferAndCall(address(token), 3, abi.encode(TEST_MAX_PRICE));
         assertEq(token.balanceOf(owner), 18);
     }
-    //TODO: FIX SALE LOGIC
+
     function testCanSellForERC1363() public {
         vm.startPrank(owner);
         erc1363.transferAndCall(address(token), 3, abi.encode(TEST_MAX_PRICE));

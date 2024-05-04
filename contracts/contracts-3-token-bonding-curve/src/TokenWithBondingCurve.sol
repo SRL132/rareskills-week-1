@@ -6,8 +6,8 @@ import {IERC1363Receiver} from "openzeppelin-contracts/contracts/interfaces/IERC
 
 /// @title Token sale and buyback with bonding curve.
 /// @author Sergi Roca Laguna
-/// @notice The more tokens a user buys, the more expensive the token becomes. It implements a linear bonding curve. The price increases in 2 every time a token is bought.
-/// @dev Token implements ERC20 extended with ERC1363 and ERC777 receiver interfaces.
+/// @notice The more tokens a user buys, the more expensive the token becomes. It implements a linear bonding curve. The price increases in quadratically every time a token is bought and decreases in quadratically every time a token is sold.
+/// @dev Token implements ERC20 extended with ERC1363 receiver interface.
 contract TokenWithBondingCurve is ERC20, IERC1363Receiver {
     error TokenWithBondingCurve__TokenAddressesAndPricesMustHaveTheSameLength();
     error TokenWithBondingCurve__PriceExceedsMaxPrice();
@@ -24,6 +24,12 @@ contract TokenWithBondingCurve is ERC20, IERC1363Receiver {
     event TokenBought(address indexed buyer, uint256 amount);
     event TokenSold(address indexed seller, uint256 amount);
 
+    /// @notice Constructor to create a token with a bonding curve
+    /// @dev Constructor to create a token with a bonding curve, it implements ERC20 constructor
+    /// @param name name of the token
+    /// @param symbol symbol of the token
+    /// @param tokenAddresses addresses of the tokens to be used in the bonding curve
+    /// @param prices prices of the tokens to be used in the bonding curve
     constructor(
         string memory name,
         string memory symbol,
@@ -57,6 +63,11 @@ contract TokenWithBondingCurve is ERC20, IERC1363Receiver {
         return this.onTransferReceived.selector;
     }
 
+    /// @notice Function to buy tokens
+    /// @dev Function to buy tokens, it calculates the price of the token and mints the token to the buyer
+    /// @param amount amount of external tokens received to purchase TBC
+    /// @param maxPrice maximum price the buyer is willing to pay
+    /// @param from address of the buyer
     function buy(uint256 amount, uint256 maxPrice, address from) internal {
         if (amount == 0) {
             revert TokenWithBondingCurve__AmountMustBeGreaterThanZero();
@@ -73,7 +84,11 @@ contract TokenWithBondingCurve is ERC20, IERC1363Receiver {
         emit TokenBought(from, price);
     }
 
-    //TODO: solve decimals
+    /// @notice Function to sell tokens
+    /// @dev Function to sell tokens, it calculates the price of the token, burns the token from the seller and returns the external token to the seller
+    /// @param amountOfTBCToSell amount of TBC to sell
+    /// @param tokenAddress address of the token to return
+    /// @param minimumTokensToReturn minimum amount of tokens to return
     function sellFor(
         uint256 amountOfTBCToSell,
         address tokenAddress,
@@ -108,7 +123,7 @@ contract TokenWithBondingCurve is ERC20, IERC1363Receiver {
     /// @return amountOfTokensSold newcalculated prices
     function _calculateSellPrice(
         uint256 amount
-    ) private returns (uint256 amountOfTokensSold) {
+    ) private view returns (uint256 amountOfTokensSold) {
         //f = function
         // where x is the total token supply
         // and m is the slope factor
@@ -117,6 +132,19 @@ contract TokenWithBondingCurve is ERC20, IERC1363Receiver {
         uint256 newPrice = sqrt(SLOPE_FACTOR * (s_totalSupply - amount)) / 2;
         amountOfTokensSold = latestPrice - newPrice;
         return amountOfTokensSold;
+    }
+
+    /// @dev Function to calculate the square root of a number
+    /// @param x number to calculate the square root for
+    /// @return square root of x
+    function sqrt(uint256 x) private pure returns (uint256) {
+        uint256 z = (x + 1) / 2;
+        uint256 y = x;
+        while (z < y) {
+            y = z;
+            z = (x / z + z) / 2;
+        }
+        return y;
     }
 
     ///VIEW FUNCTIONS
@@ -133,15 +161,5 @@ contract TokenWithBondingCurve is ERC20, IERC1363Receiver {
 
     function getTotalSupply() external view returns (uint256) {
         return s_totalSupply;
-    }
-
-    function sqrt(uint256 x) private pure returns (uint256) {
-        uint256 z = (x + 1) / 2;
-        uint256 y = x;
-        while (z < y) {
-            y = z;
-            z = (x / z + z) / 2;
-        }
-        return y;
     }
 }
