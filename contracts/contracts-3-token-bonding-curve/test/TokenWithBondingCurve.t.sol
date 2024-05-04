@@ -9,6 +9,7 @@ import {PayableToken} from "./mocks/ERC1363.sol";
 contract TokenWithBondingCurveTest is Test {
     TokenWithBondingCurve public token;
     PayableToken public erc1363;
+
     string public constant NAME = "TokenWithBondingCurve";
     string public constant SYMBOL = "TBC";
     address[] public tokenAddresses;
@@ -24,10 +25,22 @@ contract TokenWithBondingCurveTest is Test {
         prices = new uint256[](2);
         prices[0] = 1;
         prices[1] = 2;
-        vm.prank(owner);
+        vm.startPrank(owner);
         erc1363 = new PayableToken();
         tokenAddresses[0] = address(erc1363);
         token = new TokenWithBondingCurve(NAME, SYMBOL, tokenAddresses, prices);
+        vm.stopPrank();
+    }
+
+    function testRevertsIfAddressAndPriceNotSameLength() public {
+        vm.prank(owner);
+        vm.expectRevert();
+        new TokenWithBondingCurve(
+            NAME,
+            SYMBOL,
+            tokenAddresses,
+            new uint256[](1)
+        );
     }
 
     function testCanBuyWithERC1363() public {
@@ -70,5 +83,26 @@ contract TokenWithBondingCurveTest is Test {
 
     function testGetTokenAddresses() public view {
         assertEq(token.getTokenAddresses(), tokenAddresses);
+    }
+
+    function testDeployTokenWithBondingCurve() public {
+        vm.prank(owner);
+        DeployTokenWithBondingCurve deployTokenWithBondingCurve = new DeployTokenWithBondingCurve();
+        (
+            TokenWithBondingCurve tokenWithBondingCurve,
+            PayableToken erc1363
+        ) = deployTokenWithBondingCurve.run();
+    }
+
+    function testRevertsIfDirectUserCallToOnTransferReceived() public {
+        vm.prank(owner);
+        vm.expectRevert();
+        token.onTransferReceived(owner, owner, 1, abi.encode(TEST_MAX_PRICE));
+    }
+
+    function testRevertsIfDirectUserCallToTokensReceived() public {
+        vm.prank(owner);
+        vm.expectRevert();
+        token.tokensReceived(owner, owner, owner, 1, "", "");
     }
 }

@@ -8,7 +8,7 @@ import {PayableToken} from "./mocks/ERC1363.sol";
 
 contract ERC1363 is Test {
     PayableToken public erc1363;
-    address owner = makeAddr("OWNER");
+    address public owner = makeAddr("OWNER");
     function setUp() public {
         vm.prank(owner);
         erc1363 = new PayableToken();

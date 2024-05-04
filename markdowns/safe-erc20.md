@@ -15,7 +15,7 @@ SafeErc-20 implements wrapper functions onto elemental ERC-20 functions to make 
 It should be used in cases such as follows:
 
 **Where the fact that Transfer() & transferFrom() do not revert is critical on ERC20-related implementations**
-Many ERC functions return booleans and do not revert on failure. With safeERC20 you can do this to enhance security.
+Many ERC functions return booleans and do not revert on failure. With safeERC20 you can do this to enhance security against behaviour of non-standard ERC20 tokens.
 
 **Mitigate front-running attacks**
 SafeERC20 provide functions such as `increaseAllowance` and `decreaseAllowance`, which help to mitigate the vulnerabilities of the vanilla approve.

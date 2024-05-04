@@ -5,6 +5,7 @@ libs = ["lib"]
 remappings = [
     "openzeppelin-contracts/=lib/openzeppelin-contracts/",
     "erc1363-payable-token/=lib/erc1363-payable-token/",
+    "openzeppelinErc777-contracts/=lib/erc777Openzeppelin/",
 ]
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

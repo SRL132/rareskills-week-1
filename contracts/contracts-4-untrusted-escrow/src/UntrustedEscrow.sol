@@ -6,13 +6,16 @@ import {ReentrancyGuard} from "openzeppelin-contracts/contracts/utils/Reentrancy
 import {ERC165} from "openzeppelin-contracts/contracts/utils/introspection/ERC165.sol";
 import {IERC165} from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
 import {ERC165Checker} from "openzeppelin-contracts/contracts/utils/introspection/ERC165Checker.sol";
+import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @title Contract that implments an untrusted escrow
 /// @author Sergi Roca Laguna
 /// @notice Contract where a buyer can put an arbitrary ERC20 token into a contract and a seller can withdraw it 3 days later
-/// @dev This contract implements openzeppelin's ReentrancyGuard and ERC165
+/// @dev This contract implements openzeppelin's ReentrancyGuard and ERC165 as well as SafeERC20 functions for enhanced security
 contract UntrustedEscrow is ERC165, ReentrancyGuard {
     using ERC165Checker for address;
+    using SafeERC20 for IERC20;
+
     error UntrustedEscrow__CannotWithdrawBefore3Days();
     error UntrustedEscrow__AmountExceedsBalance();
     error UntrustedEscrow__TransferFailed();
@@ -73,7 +76,7 @@ contract UntrustedEscrow is ERC165, ReentrancyGuard {
             revert UntrustedEscrow__NotEnoughMoney();
         }
 
-        IERC20(_token).transfer(msg.sender, _amount);
+        IERC20(_token).safeTransfer(msg.sender, _amount);
 
         s_depositBalances[_user][_token].amount -= _amount;
         (bool success, ) = _user.call{value: msg.value}("");
@@ -97,15 +100,11 @@ contract UntrustedEscrow is ERC165, ReentrancyGuard {
             revert UntrustedEscrow__NotERC20();
         }
 
-        bool success = IERC20(_tokenAddress).transferFrom(
+        IERC20(_tokenAddress).safeTransferFrom(
             msg.sender,
             address(this),
             _amount
         );
-
-        if (!success) {
-            revert UntrustedEscrow__TransferFailed();
-        }
 
         s_depositBalances[msg.sender][_tokenAddress].amount += _amount;
         s_depositBalances[msg.sender][_tokenAddress].timestamp = block

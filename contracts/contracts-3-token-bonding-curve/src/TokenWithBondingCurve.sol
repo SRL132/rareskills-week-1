@@ -1,26 +1,36 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.24;
 import {ERC20} from "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
-import {IERC20} from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC1363Receiver} from "openzeppelin-contracts/contracts/interfaces/IERC1363Receiver.sol";
+import {IERC777Recipient} from "erc777Openzeppelin/contracts/token/ERC777/IERC777Recipient.sol";
 import {Math} from "openzeppelin-contracts/contracts/utils/math/Math.sol";
+import {ReentrancyGuard} from "openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
 
 /// @title Token sale and buyback with bonding curve.
 /// @author Sergi Roca Laguna
 /// @notice The more tokens a user buys, the more expensive the token becomes. It implements a linear bonding curve. The price increases in quadratically every time a token is bought and decreases in quadratically every time a token is sold.
 /// @dev Token implements ERC20 extended with ERC1363 receiver interface.
-contract TokenWithBondingCurve is ERC20, IERC1363Receiver {
+contract TokenWithBondingCurve is
+    ERC20,
+    IERC1363Receiver,
+    IERC777Recipient,
+    ReentrancyGuard
+{
+    using SafeERC20 for IERC20;
     error TokenWithBondingCurve__tokenAddressesAndPricesMustHaveTheSameLength();
     error TokenWithBondingCurve__PriceExceedsMaxPrice();
     error TokenWithBondingCurve__TokenNotSupported();
     error TokenWithBondingCurve__AmountMustBeGreaterThanZero();
     error TokenWithBondingCurve__TokensToReturnBelowMinimumSet();
 
-    uint256 s_totalSupply = 0;
-    uint256 constant DECIMALS = 9;
-    mapping(address token => uint256 basePrice) s_tokenBasePrices;
-    address[] s_tokenAddresses;
+    uint256 public s_totalSupply = 0;
+    //TODO add decimals logic
+    uint8 public constant DECIMALS = 18;
+    address[] public s_tokenAddresses;
     uint256 public constant SLOPE_FACTOR = 2;
+    mapping(address token => uint256 basePrice) public s_tokenBasePrices;
 
     event TokenBought(address indexed buyer, uint256 amount);
     event TokenSold(address indexed seller, uint256 amount);
@@ -58,10 +68,27 @@ contract TokenWithBondingCurve is ERC20, IERC1363Receiver {
         if (s_tokenBasePrices[msg.sender] == 0) {
             revert TokenWithBondingCurve__TokenNotSupported();
         }
-        //get max price from data
+
         uint256 maxPrice = abi.decode(_data, (uint256));
-        buy(_amount, maxPrice, _from);
+        _buy(_amount, maxPrice, _from);
         return this.onTransferReceived.selector;
+    }
+
+    ///@inheritdoc IERC777Recipient
+    function tokensReceived(
+        address _operator,
+        address _from,
+        address _to,
+        uint256 _amount,
+        bytes calldata userData,
+        bytes calldata operatorData
+    ) external {
+        if (s_tokenBasePrices[msg.sender] == 0) {
+            revert TokenWithBondingCurve__TokenNotSupported();
+        }
+
+        uint256 maxPrice = abi.decode(userData, (uint256));
+        _buy(_amount, maxPrice, _from);
     }
 
     /// @notice Function to buy tokens
@@ -69,7 +96,7 @@ contract TokenWithBondingCurve is ERC20, IERC1363Receiver {
     /// @param _amount amount of external tokens received to purchase TBC
     /// @param _maxPrice maximum price the buyer is willing to pay
     /// @param _from address of the buyer
-    function buy(uint256 _amount, uint256 _maxPrice, address _from) internal {
+    function _buy(uint256 _amount, uint256 _maxPrice, address _from) internal {
         if (_amount == 0) {
             revert TokenWithBondingCurve__AmountMustBeGreaterThanZero();
         }
@@ -94,14 +121,14 @@ contract TokenWithBondingCurve is ERC20, IERC1363Receiver {
         uint256 _amountOfTBCToSell,
         address _tokenAddress,
         uint256 _minimumTokensToReturn
-    ) external {
+    ) external nonReentrant {
         uint256 tokensToReturn = _calculateSellPrice(_amountOfTBCToSell);
         if (tokensToReturn < _minimumTokensToReturn) {
             revert TokenWithBondingCurve__TokensToReturnBelowMinimumSet();
         }
         _burn(msg.sender, _amountOfTBCToSell);
         s_totalSupply -= _amountOfTBCToSell;
-        ERC20(_tokenAddress).transfer(msg.sender, tokensToReturn);
+        IERC20(_tokenAddress).safeTransfer(msg.sender, tokensToReturn);
         emit TokenSold(msg.sender, _amountOfTBCToSell);
     }
 

@@ -25,3 +25,6 @@
 [submodule "contracts/contracts-4-untrusted-escrow/lib/openzeppelin-contracts"]
 	path = contracts/contracts-4-untrusted-escrow/lib/openzeppelin-contracts
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts
+[submodule "contracts/contracts-3-token-bonding-curve/lib/erc777Openzeppelin"]
+	path = contracts/contracts-3-token-bonding-curve/lib/erc777Openzeppelin
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts
