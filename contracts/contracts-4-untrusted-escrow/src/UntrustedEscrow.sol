@@ -50,68 +50,70 @@ contract UntrustedEscrow is ERC165, ReentrancyGuard {
 
     /// @notice This function allows a seller to withdraw tokens from the contract
     /// @dev This function allows a seller to withdraw tokens from the contract, it implements a nonReentrant modifier to avoid reentrancy attacks
-    /// @param user The address of the user that made the deposit
-    /// @param token The address of the token that was deposited
-    /// @param amount The amount of tokens to withdraw
+    /// @param _user The address of the user that made the deposit
+    /// @param _token The address of the token that was deposited
+    /// @param _amount The amount of tokens to withdraw
     function sellerWithdraw(
-        address user,
-        address token,
-        uint256 amount
+        address _user,
+        address _token,
+        uint256 _amount
     ) external payable nonReentrant {
         if (
-            block.timestamp - s_depositBalances[user][token].timestamp < 3 days
+            block.timestamp - s_depositBalances[_user][_token].timestamp <
+            3 days
         ) {
             revert UntrustedEscrow__CannotWithdrawBefore3Days();
         }
 
-        if (s_depositBalances[user][token].amount < amount) {
+        if (s_depositBalances[_user][_token].amount < _amount) {
             revert UntrustedEscrow__AmountExceedsBalance();
         }
 
-        if (msg.value < (s_depositBalances[user][token].price * amount)) {
+        if (msg.value < (s_depositBalances[_user][_token].price * _amount)) {
             revert UntrustedEscrow__NotEnoughMoney();
         }
 
-        IERC20(token).transfer(msg.sender, amount);
+        IERC20(_token).transfer(msg.sender, _amount);
 
-        s_depositBalances[user][token].amount -= amount;
-        (bool success, ) = user.call{value: msg.value}("");
+        s_depositBalances[_user][_token].amount -= _amount;
+        (bool success, ) = _user.call{value: msg.value}("");
         if (!success) {
             revert UntrustedEscrow__TransferFailed();
         }
-        emit Withdraw(user, token, amount);
+        emit Withdraw(_user, _token, _amount);
     }
 
     /// @notice This function allows a buyer to deposit tokens into the contract
     /// @dev This function allows a buyer to deposit tokens into the contract
-    /// @param tokenAddress The address of the token to deposit
-    /// @param amount The amount of tokens to deposit
-    /// @param price The price of the tokens
+    /// @param _tokenAddress The address of the token to deposit
+    /// @param _amount The amount of tokens to deposit
+    /// @param _price The price of the tokens
     function buyerDeposit(
-        address tokenAddress,
-        uint256 amount,
-        uint256 price
+        address _tokenAddress,
+        uint256 _amount,
+        uint256 _price
     ) external {
-        if (!tokenAddress.supportsInterface(type(IERC20).interfaceId)) {
+        if (!_tokenAddress.supportsInterface(type(IERC20).interfaceId)) {
             revert UntrustedEscrow__NotERC20();
         }
 
-        bool success = IERC20(tokenAddress).transferFrom(
+        bool success = IERC20(_tokenAddress).transferFrom(
             msg.sender,
             address(this),
-            amount
+            _amount
         );
 
         if (!success) {
             revert UntrustedEscrow__TransferFailed();
         }
 
-        s_depositBalances[msg.sender][tokenAddress].amount += amount;
-        s_depositBalances[msg.sender][tokenAddress].timestamp = block.timestamp;
-        s_depositBalances[msg.sender][tokenAddress].user = msg.sender;
-        s_depositBalances[msg.sender][tokenAddress].amount = amount;
-        s_depositBalances[msg.sender][tokenAddress].price = price;
+        s_depositBalances[msg.sender][_tokenAddress].amount += _amount;
+        s_depositBalances[msg.sender][_tokenAddress].timestamp = block
+            .timestamp;
+        s_depositBalances[msg.sender][_tokenAddress].user = msg.sender;
+        s_depositBalances[msg.sender][_tokenAddress].amount = _amount;
+        s_depositBalances[msg.sender][_tokenAddress].price = _price;
 
-        emit DepositDone(msg.sender, tokenAddress, amount);
+        emit DepositDone(msg.sender, _tokenAddress, _amount);
     }
 }

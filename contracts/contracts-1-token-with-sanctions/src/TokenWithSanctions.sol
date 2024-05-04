@@ -30,14 +30,14 @@ contract TokenWithSanctions is ERC20 {
         _;
     }
 
-    modifier senderNotBanned(address account) {
-        if (s_bannedAddresses[account])
+    modifier senderNotBanned(address _account) {
+        if (s_bannedAddresses[_account])
             revert TokenWithSanctions__SenderBanned();
         _;
     }
 
-    modifier recipientNotBanned(address account) {
-        if (s_bannedAddresses[account])
+    modifier recipientNotBanned(address _account) {
+        if (s_bannedAddresses[_account])
             revert TokenWithSanctions__RecipientBanned();
         _;
     }
@@ -70,37 +70,37 @@ contract TokenWithSanctions is ERC20 {
     }
     /// @notice Function that allows non-banned addresses to transfer tokens
     /// @dev Function that allows addresses not in s_bannedAddresses to transfer tokens
-    /// @param recipient The address of the recipient
-    /// @param amount The amount of tokens to transfer
+    /// @param _recipient The address of the recipient
+    /// @param _amount The amount of tokens to transfer
     /// @return a bool to tell whether the transfer was successful
     function transfer(
-        address recipient,
-        uint256 amount
+        address _recipient,
+        uint256 _amount
     )
         public
         override
         senderNotBanned(msg.sender)
-        recipientNotBanned(recipient)
+        recipientNotBanned(_recipient)
         returns (bool)
     {
-        return super.transfer(recipient, amount);
+        return super.transfer(_recipient, _amount);
     }
     /// @notice Function that allows non-banned addresses to transfer and receive tokens on behalf of another address
     /// @dev Function that allows addresses not in s_bannedAddresses to transfer and receive tokens on behalf of another address
-    /// @param sender The address of the sender
-    /// @param recipient The address of the recipient
-    /// @param amount The amount of tokens to transfer
+    /// @param _sender The address whose tokens will be transferred
+    /// @param _recipient The address of the recipient
+    /// @param _amount The amount of tokens to transfer
     function transferFrom(
-        address sender,
-        address recipient,
-        uint256 amount
+        address _sender,
+        address _recipient,
+        uint256 _amount
     )
         public
         override
-        senderNotBanned(sender)
-        recipientNotBanned(recipient)
+        senderNotBanned(_sender)
+        recipientNotBanned(_recipient)
         returns (bool)
     {
-        return super.transferFrom(sender, recipient, amount);
+        return super.transferFrom(_sender, _recipient, _amount);
     }
 }

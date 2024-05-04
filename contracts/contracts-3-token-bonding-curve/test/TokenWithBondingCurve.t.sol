@@ -68,7 +68,7 @@ contract TokenWithBondingCurveTest is Test {
         token.sellFor(1, address(erc1363), 10);
     }
 
-    function testGetTokenAddresses() public {
+    function testGetTokenAddresses() public view {
         assertEq(token.getTokenAddresses(), tokenAddresses);
     }
 }

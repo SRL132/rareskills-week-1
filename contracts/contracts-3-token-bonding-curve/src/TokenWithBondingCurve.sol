@@ -9,7 +9,7 @@ import {IERC1363Receiver} from "openzeppelin-contracts/contracts/interfaces/IERC
 /// @notice The more tokens a user buys, the more expensive the token becomes. It implements a linear bonding curve. The price increases in quadratically every time a token is bought and decreases in quadratically every time a token is sold.
 /// @dev Token implements ERC20 extended with ERC1363 receiver interface.
 contract TokenWithBondingCurve is ERC20, IERC1363Receiver {
-    error TokenWithBondingCurve__TokenAddressesAndPricesMustHaveTheSameLength();
+    error TokenWithBondingCurve__tokenAddressesAndPricesMustHaveTheSameLength();
     error TokenWithBondingCurve__PriceExceedsMaxPrice();
     error TokenWithBondingCurve__TokenNotSupported();
     error TokenWithBondingCurve__AmountMustBeGreaterThanZero();
@@ -26,22 +26,22 @@ contract TokenWithBondingCurve is ERC20, IERC1363Receiver {
 
     /// @notice Constructor to create a token with a bonding curve
     /// @dev Constructor to create a token with a bonding curve, it implements ERC20 constructor
-    /// @param name name of the token
-    /// @param symbol symbol of the token
-    /// @param tokenAddresses addresses of the tokens to be used in the bonding curve
-    /// @param prices prices of the tokens to be used in the bonding curve
+    /// @param _name name of the token
+    /// @param _symbol symbol of the token
+    /// @param _tokenAddresses addresses of the tokens to be used in the bonding curve
+    /// @param _prices prices of the tokens to be used in the bonding curve
     constructor(
-        string memory name,
-        string memory symbol,
-        address[] memory tokenAddresses,
-        uint256[] memory prices
-    ) ERC20(name, symbol) {
-        if (tokenAddresses.length != prices.length) {
-            revert TokenWithBondingCurve__TokenAddressesAndPricesMustHaveTheSameLength();
+        string memory _name,
+        string memory _symbol,
+        address[] memory _tokenAddresses,
+        uint256[] memory _prices
+    ) ERC20(_name, _symbol) {
+        if (_tokenAddresses.length != _prices.length) {
+            revert TokenWithBondingCurve__tokenAddressesAndPricesMustHaveTheSameLength();
         }
-        for (uint256 i = 0; i < tokenAddresses.length; ++i) {
-            s_tokenBasePrices[tokenAddresses[i]] = prices[i];
-            s_tokenAddresses.push(tokenAddresses[i]);
+        for (uint256 i = 0; i < _tokenAddresses.length; ++i) {
+            s_tokenBasePrices[_tokenAddresses[i]] = _prices[i];
+            s_tokenAddresses.push(_tokenAddresses[i]);
         }
     }
 
@@ -49,100 +49,100 @@ contract TokenWithBondingCurve is ERC20, IERC1363Receiver {
 
     /// @inheritdoc	IERC1363Receiver
     function onTransferReceived(
-        address operator,
-        address from,
-        uint256 amount,
-        bytes memory data
+        address _operator,
+        address _from,
+        uint256 _amount,
+        bytes memory _data
     ) external returns (bytes4) {
         if (s_tokenBasePrices[msg.sender] == 0) {
             revert TokenWithBondingCurve__TokenNotSupported();
         }
         //get max price from data
-        uint256 maxPrice = abi.decode(data, (uint256));
-        buy(amount, maxPrice, from);
+        uint256 maxPrice = abi.decode(_data, (uint256));
+        buy(_amount, maxPrice, _from);
         return this.onTransferReceived.selector;
     }
 
     /// @notice Function to buy tokens
     /// @dev Function to buy tokens, it calculates the price of the token and mints the token to the buyer
-    /// @param amount amount of external tokens received to purchase TBC
-    /// @param maxPrice maximum price the buyer is willing to pay
-    /// @param from address of the buyer
-    function buy(uint256 amount, uint256 maxPrice, address from) internal {
-        if (amount == 0) {
+    /// @param _amount amount of external tokens received to purchase TBC
+    /// @param _maxPrice maximum price the buyer is willing to pay
+    /// @param _from address of the buyer
+    function buy(uint256 _amount, uint256 _maxPrice, address _from) internal {
+        if (_amount == 0) {
             revert TokenWithBondingCurve__AmountMustBeGreaterThanZero();
         }
-        uint256 price = _calculateBuyPrice(amount);
-        if (price > maxPrice) {
+        uint256 price = _calculateBuyPrice(_amount);
+        if (price > _maxPrice) {
             revert TokenWithBondingCurve__PriceExceedsMaxPrice();
         }
-        _mint(from, price);
+        _mint(_from, price);
         unchecked {
             s_totalSupply += price;
         }
 
-        emit TokenBought(from, price);
+        emit TokenBought(_from, price);
     }
 
     /// @notice Function to sell tokens
     /// @dev Function to sell tokens, it calculates the price of the token, burns the token from the seller and returns the external token to the seller
-    /// @param amountOfTBCToSell amount of TBC to sell
-    /// @param tokenAddress address of the token to return
-    /// @param minimumTokensToReturn minimum amount of tokens to return
+    /// @param _amountOfTBCToSell amount of TBC to sell
+    /// @param _tokenAddress address of the token to return
+    /// @param _minimumTokensToReturn minimum amount of tokens to return
     function sellFor(
-        uint256 amountOfTBCToSell,
-        address tokenAddress,
-        uint256 minimumTokensToReturn
+        uint256 _amountOfTBCToSell,
+        address _tokenAddress,
+        uint256 _minimumTokensToReturn
     ) external {
-        uint256 tokensToReturn = _calculateSellPrice(amountOfTBCToSell);
-        if (tokensToReturn < minimumTokensToReturn) {
+        uint256 tokensToReturn = _calculateSellPrice(_amountOfTBCToSell);
+        if (tokensToReturn < _minimumTokensToReturn) {
             revert TokenWithBondingCurve__TokensToReturnBelowMinimumSet();
         }
-        _burn(msg.sender, amountOfTBCToSell);
-        s_totalSupply -= amountOfTBCToSell;
-        ERC20(tokenAddress).transfer(msg.sender, tokensToReturn);
-        emit TokenSold(msg.sender, amountOfTBCToSell);
+        _burn(msg.sender, _amountOfTBCToSell);
+        s_totalSupply -= _amountOfTBCToSell;
+        ERC20(_tokenAddress).transfer(msg.sender, tokensToReturn);
+        emit TokenSold(msg.sender, _amountOfTBCToSell);
     }
 
     ///HELPER FUNCTIONS
-    /// @param amount amount of external tokens received to purchase TBC
-    /// @return amountOfTokensBought newcalculated prices
+    /// @param _amount amount of external tokens received to purchase TBC
+    /// @return _amountOfTokensBought newcalculated prices
     function _calculateBuyPrice(
-        uint256 amount
-    ) private view returns (uint256 amountOfTokensBought) {
+        uint256 _amount
+    ) private view returns (uint256 _amountOfTokensBought) {
         //total supply of TBC
         //f = function
         // where x is the total token supply
         // and m is the slope factor
         //f(x) = m * (x^2)
         uint256 latestPrice = SLOPE_FACTOR * s_totalSupply ** 2;
-        uint256 newPrice = SLOPE_FACTOR * (s_totalSupply + amount) ** 2;
-        amountOfTokensBought = newPrice - latestPrice;
+        uint256 newPrice = SLOPE_FACTOR * (s_totalSupply + _amount) ** 2;
+        _amountOfTokensBought = newPrice - latestPrice;
     }
-    /// @param amount amount of external tokens received to sell TBC
-    /// @return amountOfTokensSold newcalculated prices
+    /// @param _amount amount of external tokens received to sell TBC
+    /// @return _amountOfTokensSold newcalculated prices
     function _calculateSellPrice(
-        uint256 amount
-    ) private view returns (uint256 amountOfTokensSold) {
+        uint256 _amount
+    ) private view returns (uint256 _amountOfTokensSold) {
         //f = function
         // where x is the total token supply
         // and m is the slope factor
         //f(x) = m * (x^2)
         uint256 latestPrice = sqrt(SLOPE_FACTOR * s_totalSupply) / 2;
-        uint256 newPrice = sqrt(SLOPE_FACTOR * (s_totalSupply - amount)) / 2;
-        amountOfTokensSold = latestPrice - newPrice;
-        return amountOfTokensSold;
+        uint256 newPrice = sqrt(SLOPE_FACTOR * (s_totalSupply - _amount)) / 2;
+        _amountOfTokensSold = latestPrice - newPrice;
+        return _amountOfTokensSold;
     }
 
     /// @dev Function to calculate the square root of a number
-    /// @param x number to calculate the square root for
+    /// @param _x number to calculate the square root for
     /// @return square root of x
-    function sqrt(uint256 x) private pure returns (uint256) {
-        uint256 z = (x + 1) / 2;
-        uint256 y = x;
+    function sqrt(uint256 _x) private pure returns (uint256) {
+        uint256 z = (_x + 1) / 2;
+        uint256 y = _x;
         while (z < y) {
             y = z;
-            z = (x / z + z) / 2;
+            z = (_x / z + z) / 2;
         }
         return y;
     }
@@ -154,9 +154,9 @@ contract TokenWithBondingCurve is ERC20, IERC1363Receiver {
     }
 
     function getTokenBasePrice(
-        address tokenAddress
+        address _tokenAddress
     ) external view returns (uint256) {
-        return s_tokenBasePrices[tokenAddress];
+        return s_tokenBasePrices[_tokenAddress];
     }
 
     function getTotalSupply() external view returns (uint256) {

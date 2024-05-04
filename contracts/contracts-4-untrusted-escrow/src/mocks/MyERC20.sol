@@ -9,22 +9,22 @@ import {ERC165} from "openzeppelin-contracts/contracts/utils/introspection/ERC16
 /// @dev This is a mock ERC20 used to test UntrustedEscrow
 contract MyERC20 is ERC20, ERC165 {
     constructor(
-        address initialOwner,
-        string memory name,
-        string memory symbol
-    ) ERC20(name, symbol) {
-        _mint(initialOwner, 1000000 * (10 ** uint256(decimals())));
+        address _initialOwner,
+        string memory _name,
+        string memory _symbol
+    ) ERC20(_name, _symbol) {
+        _mint(_initialOwner, 1000000 * (10 ** uint256(decimals())));
     }
 
-    function mint(address to, uint256 amount) public {
-        _mint(to, amount);
+    function mint(address _to, uint256 _amount) public {
+        _mint(_to, _amount);
     }
 
     function supportsInterface(
-        bytes4 interfaceId
+        bytes4 _interfaceId
     ) public view virtual override returns (bool) {
         return
-            interfaceId == type(IERC20).interfaceId ||
-            super.supportsInterface(interfaceId);
+            _interfaceId == type(IERC20).interfaceId ||
+            super.supportsInterface(_interfaceId);
     }
 }
