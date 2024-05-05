@@ -67,6 +67,16 @@ contract TokenWithBondingCurveTest is Test {
         );
     }
 
+    function testCanBuyWithERC1363BigOrder() public {
+        vm.prank(owner);
+        wethErc1363.transferAndCall(
+            address(token),
+            1 ether,
+            abi.encode(1_000_000_000_000_000_000_000_000_000 ether)
+        );
+        assertEq(token.balanceOf(owner), 2e36 * TEST_MOCK_WETH_VALUE);
+    }
+
     function testCanSellForERC1363() public {
         vm.startPrank(owner);
         wethErc1363.transferAndCall(

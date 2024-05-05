@@ -10,7 +10,7 @@ import {Math} from "@openzeppelin/utils/math/Math.sol";
 import {ReentrancyGuard} from "@openzeppelin/utils/ReentrancyGuard.sol";
 import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
-//TODO: Revise decimals
+//TODO: Revise Collateral Ratio Logic
 /// @title Token sale and buyback with bonding curve.
 /// @author Sergi Roca Laguna
 /// @notice The more tokens a user buys, the more expensive the token becomes. It implements a linear bonding curve. The price increases in quadratically every time a token is bought and decreases in quadratically every time a token is sold.
@@ -195,6 +195,7 @@ contract TokenWithBondingCurve is
     /// f(x) = m * (x^2)
     /// where x is the total token supply and m is the slope factor
     /// @param _amount amount of external tokens received to sell TBC
+    /// @param _totalSupply total supply of the token in USD, this element will be adapted
     /// @return _amountOfTokensSold newcalculated prices
     function _calculateSellPrice(
         uint256 _amount,
