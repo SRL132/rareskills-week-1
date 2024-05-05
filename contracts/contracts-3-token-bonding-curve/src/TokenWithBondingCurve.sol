@@ -125,25 +125,29 @@ contract TokenWithBondingCurve is
         address _tokenAddress,
         uint256 _minimumTokensToReturn
     ) external nonReentrant {
-        uint256 tokensToReturn = _calculateSellPrice(_amountOfTBCToSell);
-        uint256 weiAdaptedTokensToReturn = (tokensToReturn * WEI_CONVERTER);
+        uint256 weiAdaptedTokensToReturn = _amountOfTBCToSell * WEI_CONVERTER;
         uint256 usdAdaptedTokensToReturn = _getTokenAmountFromUsd(
             _tokenAddress,
             weiAdaptedTokensToReturn
         );
+        uint256 usdAdaptedTotalSupply = _getTokenAmountFromUsd(
+            _tokenAddress,
+            s_totalSupply * WEI_CONVERTER
+        );
+        uint256 tokensToReturn = _calculateSellPrice(
+            usdAdaptedTokensToReturn / 100,
+            usdAdaptedTotalSupply / 100
+        );
 
-        if (usdAdaptedTokensToReturn < _minimumTokensToReturn) {
+        if (tokensToReturn < _minimumTokensToReturn) {
             revert TokenWithBondingCurve__TokensToReturnBelowMinimumSet();
         }
 
-        s_totalSupply -= usdAdaptedTokensToReturn;
-        IERC20(_tokenAddress).safeTransfer(
-            msg.sender,
-            weiAdaptedTokensToReturn
-        );
-        _burn(msg.sender, usdAdaptedTokensToReturn);
+        s_totalSupply -= _amountOfTBCToSell;
+        IERC20(_tokenAddress).safeTransfer(msg.sender, tokensToReturn);
+        _burn(msg.sender, _amountOfTBCToSell);
 
-        emit TokenSold(msg.sender, usdAdaptedTokensToReturn);
+        emit TokenSold(msg.sender, _amountOfTBCToSell);
     }
 
     //HELPER FUNCTIONS
@@ -193,10 +197,11 @@ contract TokenWithBondingCurve is
     /// @param _amount amount of external tokens received to sell TBC
     /// @return _amountOfTokensSold newcalculated prices
     function _calculateSellPrice(
-        uint256 _amount
+        uint256 _amount,
+        uint256 _totalSupply
     ) private view returns (uint256 _amountOfTokensSold) {
-        uint256 latestPrice = Math.sqrt(SLOPE_FACTOR * s_totalSupply) / 2;
-        uint256 newPrice = Math.sqrt(SLOPE_FACTOR * (s_totalSupply - _amount)) /
+        uint256 latestPrice = Math.sqrt((SLOPE_FACTOR * _totalSupply)) / 2;
+        uint256 newPrice = Math.sqrt(SLOPE_FACTOR * (_totalSupply - _amount)) /
             2;
         _amountOfTokensSold = latestPrice - newPrice;
         return _amountOfTokensSold;
