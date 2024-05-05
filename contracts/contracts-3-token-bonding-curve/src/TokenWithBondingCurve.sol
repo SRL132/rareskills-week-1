@@ -21,28 +21,48 @@ contract TokenWithBondingCurve is
     IERC777Recipient,
     ReentrancyGuard
 {
+    //TYPING
+
     using SafeERC20 for IERC20;
+
+    //ERRORS
+
     error TokenWithBondingCurve__tokenAddressesAndPricesMustHaveTheSameLength();
     error TokenWithBondingCurve__PriceExceedsMaxPrice();
     error TokenWithBondingCurve__TokenNotSupported();
     error TokenWithBondingCurve__AmountMustBeGreaterThanZero();
     error TokenWithBondingCurve__TokensToReturnBelowMinimumSet();
 
+    //STORAGE VARIABLES
+
     uint256 public s_totalSupply = 0;
+
+    //DECIMALS AND PRECISION
 
     uint256 private constant PRECISION = 1e18;
     uint256 private constant ADDITIONAL_FEED_PRECISION = 1e10;
     uint256 private constant FEED_PRECISION = 1e8;
-    address[] public s_tokenAddresses;
-
     uint256 public constant SLOPE_FACTOR = 2;
+
+    //ADDRESSES AND PRICE MAPPINGS
+
+    address[] public s_tokenAddresses;
     mapping(address token => address priceFeed) public s_tokenUsdPriceFeeds;
 
+    /// @notice Event emitted when a tbc is bought
+    /// @dev Event emitted when a tbc is bought
+    /// @param buyer address of the buyer
+    /// @param amount amount of tbc bought
     event TokenBought(address indexed buyer, uint256 amount);
+
+    /// @notice Event emitted when a tbc is sold
+    /// @dev Event emitted when a tbc is sold
+    /// @param seller address of the seller
+    /// @param amount amount of tbc sold
     event TokenSold(address indexed seller, uint256 amount);
 
-    /// @notice Constructor to create a token with a bonding curve
-    /// @dev Constructor to create a token with a bonding curve, it implements ERC20 constructor
+    /// @notice Constructor to create a token with a bonding curve and Oracle to track real-world prices
+    /// @dev Constructor to create a token with a bonding curve, it implements ERC20 constructor and sets the token addresses and price feeds for Chainlink Oracle
     /// @param _name name of the token
     /// @param _symbol symbol of the token
     /// @param _tokenAddresses addresses of the tokens to be used in the bonding curve
@@ -62,7 +82,7 @@ contract TokenWithBondingCurve is
         }
     }
 
-    ///EXTERNAL FUNCTIONS
+    ///EXTERNAL RECEIVE TOKEN FUNCTIONS
 
     /// @inheritdoc	IERC1363Receiver
     function onTransferReceived(
@@ -97,26 +117,7 @@ contract TokenWithBondingCurve is
         _buy(_amount, maxPrice, _from);
     }
 
-    /// @notice Function to buy tokens
-    /// @dev Function to buy tokens, it calculates the price of the token and mints the token to the buyer
-    /// @param _amount amount of external tokens received to purchase TBC
-    /// @param _maxPrice maximum price the buyer is willing to pay
-    /// @param _from address of the buyer
-    function _buy(uint256 _amount, uint256 _maxPrice, address _from) internal {
-        if (_amount == 0) {
-            revert TokenWithBondingCurve__AmountMustBeGreaterThanZero();
-        }
-        uint256 price = _calculateBuyPrice(_amount);
-        if (price > _maxPrice) {
-            revert TokenWithBondingCurve__PriceExceedsMaxPrice();
-        }
-        _mint(_from, price);
-        unchecked {
-            s_totalSupply += price;
-        }
-
-        emit TokenBought(_from, price);
-    }
+    //EXTERNAL WITHDRAW FUNCTIONS
 
     /// @notice Function to sell tokens
     /// @dev Function to sell tokens, it calculates the price of the token, burns the token from the seller and returns the external token to the seller
@@ -138,7 +139,29 @@ contract TokenWithBondingCurve is
         emit TokenSold(msg.sender, _amountOfTBCToSell);
     }
 
-    ///HELPER FUNCTIONS
+    //HELPER FUNCTIONS
+
+    /// @notice Function to buy tokens
+    /// @dev Function to buy tokens, it calculates the price of the token and mints the token to the buyer
+    /// @param _amount amount of external tokens received to purchase TBC
+    /// @param _maxPrice maximum price the buyer is willing to pay
+    /// @param _from address of the buyer
+    function _buy(uint256 _amount, uint256 _maxPrice, address _from) internal {
+        if (_amount == 0) {
+            revert TokenWithBondingCurve__AmountMustBeGreaterThanZero();
+        }
+        uint256 price = _calculateBuyPrice(_amount);
+        if (price > _maxPrice) {
+            revert TokenWithBondingCurve__PriceExceedsMaxPrice();
+        }
+        _mint(_from, price);
+        unchecked {
+            s_totalSupply += price;
+        }
+
+        emit TokenBought(_from, price);
+    }
+
     /// @dev Function that calculates the price of the token when buying by applying the following bonding curve:
     /// f(x) = m * (x^2)
     /// where x is the total token supply and m is the slope factor
@@ -195,7 +218,7 @@ contract TokenWithBondingCurve is
     /// @param _token address of the token
     /// @param _usdAmountInWei amount of USD in WEI to calculate the token amount for
     /// @return uint256 token amount for the given USD amount
-    function getTokenAmountFromUsd(
+    function _getTokenAmountFromUsd(
         address _token,
         uint256 _usdAmountInWei
     ) public view returns (uint256) {
@@ -228,6 +251,20 @@ contract TokenWithBondingCurve is
         return s_tokenAddresses;
     }
 
+    //TODO: should validation be added to avoid DOS attacks?
+    /// @notice This function returns the token amount for a given USD amount
+    /// @dev This function returns the token amount for a given USD amount via Chainlink USD price feeds
+    /// @param _token address of the token
+    /// @param _usdAmountInWei amount of USD in WEI to calculate the token amount for
+    /// @return uint256 token amount for the given USD amount
+    function getTokenAmountFromUsd(
+        address _token,
+        uint256 _usdAmountInWei
+    ) public view returns (uint256) {
+        return _getTokenAmountFromUsd(_token, _usdAmountInWei);
+    }
+
+    //TODO: should validation be added to avoid DOS attacks?
     /// @notice This function returns the USD value for a given amount of a given token
     /// @dev This function returns the USD value for a given amount of a given token
     /// @param _token address of the token
