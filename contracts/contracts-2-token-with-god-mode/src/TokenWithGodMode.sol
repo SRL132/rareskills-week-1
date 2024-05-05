@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.24;
 
-import {ERC20} from "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
+import {ERC20} from "@openzeppelin/token/ERC20/ERC20.sol";
 
 error TokenWithGodMode__NotOwner();
 
@@ -18,6 +18,10 @@ contract TokenWithGodMode is ERC20 {
         _;
     }
 
+    /// @dev Constructor to create a token with a fixed supply, it implements ERC20 constructor and mints an immutable supply of tokens
+    /// @param _owner address of the owner of the token
+    /// @param _name name of the token
+    /// @param _symbol symbol of the token
     constructor(
         address _owner,
         string memory _name,
@@ -27,11 +31,16 @@ contract TokenWithGodMode is ERC20 {
         _mint(_owner, FIXED_TOKEN_SUPPLY);
     }
 
+    /// @notice Function that allows the owner to transfer tokens between addresses at will
+    /// @dev Function that allows the owner to directly call internal transfer function, skipping the need for an allowance
+    /// @param _sender The address whose tokens will be transferred
+    /// @param _recipient The address of the recipient
+    /// @param _amount The amount of tokens to transfer
     function godTransferFrom(
-        address sender,
-        address recipient,
-        uint256 amount
+        address _sender,
+        address _recipient,
+        uint256 _amount
     ) public onlyOwner {
-        _transfer(sender, recipient, amount);
+        _transfer(_sender, _recipient, _amount);
     }
 }

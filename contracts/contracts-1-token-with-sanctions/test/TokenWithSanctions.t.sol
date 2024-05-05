@@ -9,6 +9,7 @@ contract TokenWithSanctionsTest is Test {
     address public owner = makeAddr("OWNER");
     address public bannedAddress = makeAddr("BANNED_ADDRESS");
     address public recipient = makeAddr("RECIPIENT");
+    address public recipient2 = makeAddr("RECIPIENT2");
     string public name = "TokenWithSanctions";
     string public symbol = "TWS";
     uint256 public constant FIXED_TOKEN_SUPPLY = 500;
@@ -48,6 +49,15 @@ contract TokenWithSanctionsTest is Test {
         tokenWithSanctions.banAddress(bannedAddress);
         vm.expectRevert();
         tokenWithSanctions.transferFrom(owner, bannedAddress, 1);
+    }
+
+    function testTransferFrom() public {
+        vm.startPrank(owner);
+        tokenWithSanctions.transfer(recipient, 1);
+        tokenWithSanctions.approve(recipient, 1);
+        vm.stopPrank();
+        vm.prank(recipient);
+        tokenWithSanctions.transferFrom(owner, recipient2, 1);
     }
 
     function testCannotTransferMoreThan500Tokens() public {

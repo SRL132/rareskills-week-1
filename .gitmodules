@@ -16,3 +16,18 @@
 [submodule "contracts/contracts-3-token-bonding-curve/lib/openzeppelin-contracts"]
 	path = contracts/contracts-3-token-bonding-curve/lib/openzeppelin-contracts
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts
+[submodule "contracts/contracts-3-token-bonding-curve/lib/erc1363-payable-token"]
+	path = contracts/contracts-3-token-bonding-curve/lib/erc1363-payable-token
+	url = https://github.com/vittominacori/erc1363-payable-token
+[submodule "contracts/contracts-4-untrusted-escrow/lib/forge-std"]
+	path = contracts/contracts-4-untrusted-escrow/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
+[submodule "contracts/contracts-4-untrusted-escrow/lib/openzeppelin-contracts"]
+	path = contracts/contracts-4-untrusted-escrow/lib/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts
+[submodule "contracts/contracts-3-token-bonding-curve/lib/erc777Openzeppelin"]
+	path = contracts/contracts-3-token-bonding-curve/lib/erc777Openzeppelin
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts
+[submodule "contracts/contracts-3-token-bonding-curve/lib/chainlink-brownie-contracts"]
+	path = contracts/contracts-3-token-bonding-curve/lib/chainlink-brownie-contracts
+	url = https://github.com/smartcontractkit/chainlink-brownie-contracts
