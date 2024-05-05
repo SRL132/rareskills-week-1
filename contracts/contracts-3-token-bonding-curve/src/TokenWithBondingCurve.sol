@@ -22,11 +22,9 @@ contract TokenWithBondingCurve is
     ReentrancyGuard
 {
     //TYPING
-
     using SafeERC20 for IERC20;
 
     //ERRORS
-
     error TokenWithBondingCurve__tokenAddressesAndPricesMustHaveTheSameLength();
     error TokenWithBondingCurve__PriceExceedsMaxPrice();
     error TokenWithBondingCurve__TokenNotSupported();
@@ -34,18 +32,17 @@ contract TokenWithBondingCurve is
     error TokenWithBondingCurve__TokensToReturnBelowMinimumSet();
 
     //STORAGE VARIABLES
-
     uint256 public s_totalSupply = 0;
 
     //DECIMALS AND PRECISION
-
     uint256 private constant PRECISION = 1e18;
     uint256 private constant ADDITIONAL_FEED_PRECISION = 1e10;
     uint256 private constant FEED_PRECISION = 1e8;
+
+    //BONDING CURVE VARIABLES
     uint256 public constant SLOPE_FACTOR = 2;
 
     //ADDRESSES AND PRICE MAPPINGS
-
     address[] public s_tokenAddresses;
     mapping(address token => address priceFeed) public s_tokenUsdPriceFeeds;
 
@@ -94,9 +91,8 @@ contract TokenWithBondingCurve is
         if (s_tokenUsdPriceFeeds[msg.sender] == address(0)) {
             revert TokenWithBondingCurve__TokenNotSupported();
         }
-
         uint256 maxPrice = abi.decode(_data, (uint256));
-        _buy(_amount, maxPrice, _from);
+        _buy(_amount, maxPrice, _from, msg.sender);
         return this.onTransferReceived.selector;
     }
 
@@ -112,9 +108,8 @@ contract TokenWithBondingCurve is
         if (s_tokenUsdPriceFeeds[msg.sender] == address(0)) {
             revert TokenWithBondingCurve__TokenNotSupported();
         }
-        _getUsdValue(_from, _amount);
         uint256 maxPrice = abi.decode(_userData, (uint256));
-        _buy(_amount, maxPrice, _from);
+        _buy(_amount, maxPrice, _from, msg.sender);
     }
 
     //EXTERNAL WITHDRAW FUNCTIONS
@@ -136,7 +131,7 @@ contract TokenWithBondingCurve is
         _burn(msg.sender, _amountOfTBCToSell);
         s_totalSupply -= _amountOfTBCToSell;
         IERC20(_tokenAddress).safeTransfer(msg.sender, tokensToReturn);
-        emit TokenSold(msg.sender, _amountOfTBCToSell);
+        emit TokenSold(msg.sender, tokensToReturn);
     }
 
     //HELPER FUNCTIONS
@@ -146,7 +141,12 @@ contract TokenWithBondingCurve is
     /// @param _amount amount of external tokens received to purchase TBC
     /// @param _maxPrice maximum price the buyer is willing to pay
     /// @param _from address of the buyer
-    function _buy(uint256 _amount, uint256 _maxPrice, address _from) internal {
+    function _buy(
+        uint256 _amount,
+        uint256 _maxPrice,
+        address _from,
+        address priceFeed
+    ) internal {
         if (_amount == 0) {
             revert TokenWithBondingCurve__AmountMustBeGreaterThanZero();
         }
@@ -154,10 +154,10 @@ contract TokenWithBondingCurve is
         if (price > _maxPrice) {
             revert TokenWithBondingCurve__PriceExceedsMaxPrice();
         }
-        _mint(_from, price);
-        unchecked {
-            s_totalSupply += price;
-        }
+        uint256 usdAdaptedPrice = _getUsdValue(priceFeed, price);
+        _mint(_from, usdAdaptedPrice);
+
+        s_totalSupply += price;
 
         emit TokenBought(_from, price);
     }

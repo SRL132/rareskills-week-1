@@ -24,6 +24,8 @@ contract TokenWithBondingCurveTest is Test {
     uint256 public constant TEST_MOCK_WBTC_VALUE = 1000;
     uint256 public constant TEST_MOCK_WETH_VALUE = 2000;
     uint256 public constant TEST_MOCK_USD_VALUE = 1_000_000_000;
+    uint256 public constant TEST_MOCK_EXPECTED_TBC_BUY = 18;
+    uint256 public constant TEST_MOCK_EXPECTED_MINIMUM_RETURN = 3;
 
     function setUp() external {
         deployer = new DeployTokenWithBondingCurve();
@@ -58,7 +60,10 @@ contract TokenWithBondingCurveTest is Test {
             3,
             abi.encode(TEST_MAX_PRICE)
         );
-        assertEq(token.balanceOf(owner), 18);
+        assertEq(
+            token.balanceOf(owner),
+            TEST_MOCK_EXPECTED_TBC_BUY * TEST_MOCK_WETH_VALUE
+        );
     }
 
     function testCanSellForERC1363() public {
@@ -68,7 +73,11 @@ contract TokenWithBondingCurveTest is Test {
             3,
             abi.encode(TEST_MAX_PRICE)
         );
-        token.sellFor(token.balanceOf(owner), address(wethErc1363), 3);
+        token.sellFor(
+            token.balanceOf(owner),
+            address(wethErc1363),
+            TEST_MOCK_EXPECTED_MINIMUM_RETURN
+        );
         assertEq(wethErc1363.balanceOf(owner), ERC_1363_INITIAL_SUPPLY);
     }
 
@@ -117,7 +126,7 @@ contract TokenWithBondingCurveTest is Test {
         token.tokensReceived(owner, owner, owner, 1, "", "");
     }
 
-    function testGetTokenPriceFeed() public {
+    function testGetTokenPriceFeed() public view {
         assertEq(
             token.getTokenPriceFeed(address(wethErc1363)),
             priceFeedAddresses[0]
@@ -128,7 +137,7 @@ contract TokenWithBondingCurveTest is Test {
         );
     }
 
-    function testGetUsdValue() public {
+    function testGetUsdValue() public view {
         assertEq(
             token.getUsdValue(address(wethErc1363), 1),
             TEST_MOCK_WETH_VALUE
@@ -139,11 +148,11 @@ contract TokenWithBondingCurveTest is Test {
         );
     }
 
-    function testGetTokenAddresse() public {
+    function testGetTokenAddresse() public view {
         assertEq(token.getTokenAddresses(), tokenAddresses);
     }
 
-    function testGetTokenAmountFromUsd() public {
+    function testGetTokenAmountFromUsd() public view {
         assertEq(
             token.getTokenAmountFromUsd(
                 address(wethErc1363),
