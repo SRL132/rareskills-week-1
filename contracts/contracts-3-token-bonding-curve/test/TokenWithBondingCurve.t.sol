@@ -26,6 +26,7 @@ contract TokenWithBondingCurveTest is Test {
     uint256 public constant TEST_MOCK_USD_VALUE = 1_000_000_000;
     uint256 public constant TEST_MOCK_EXPECTED_TBC_BUY = 18;
     uint256 public constant TEST_MOCK_EXPECTED_MINIMUM_RETURN = 3;
+    uint256 public constant TEST_BUY_AMOUNT = 3;
 
     function setUp() external {
         deployer = new DeployTokenWithBondingCurve();
@@ -70,7 +71,7 @@ contract TokenWithBondingCurveTest is Test {
         vm.startPrank(owner);
         wethErc1363.transferAndCall(
             address(token),
-            3,
+            TEST_BUY_AMOUNT,
             abi.encode(TEST_MAX_PRICE)
         );
         token.sellFor(

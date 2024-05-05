@@ -38,6 +38,7 @@ contract TokenWithBondingCurve is
     uint256 private constant PRECISION = 1e18;
     uint256 private constant ADDITIONAL_FEED_PRECISION = 1e10;
     uint256 private constant FEED_PRECISION = 1e8;
+    uint256 private constant WEI_CONVERTER = 100;
 
     //BONDING CURVE VARIABLES
     uint256 public constant SLOPE_FACTOR = 2;
@@ -125,13 +126,24 @@ contract TokenWithBondingCurve is
         uint256 _minimumTokensToReturn
     ) external nonReentrant {
         uint256 tokensToReturn = _calculateSellPrice(_amountOfTBCToSell);
-        if (tokensToReturn < _minimumTokensToReturn) {
+        uint256 weiAdaptedTokensToReturn = (tokensToReturn * WEI_CONVERTER);
+        uint256 usdAdaptedTokensToReturn = _getTokenAmountFromUsd(
+            _tokenAddress,
+            weiAdaptedTokensToReturn
+        );
+
+        if (usdAdaptedTokensToReturn < _minimumTokensToReturn) {
             revert TokenWithBondingCurve__TokensToReturnBelowMinimumSet();
         }
-        _burn(msg.sender, _amountOfTBCToSell);
-        s_totalSupply -= _amountOfTBCToSell;
-        IERC20(_tokenAddress).safeTransfer(msg.sender, tokensToReturn);
-        emit TokenSold(msg.sender, tokensToReturn);
+
+        s_totalSupply -= usdAdaptedTokensToReturn;
+        IERC20(_tokenAddress).safeTransfer(
+            msg.sender,
+            weiAdaptedTokensToReturn
+        );
+        _burn(msg.sender, usdAdaptedTokensToReturn);
+
+        emit TokenSold(msg.sender, usdAdaptedTokensToReturn);
     }
 
     //HELPER FUNCTIONS
@@ -157,9 +169,9 @@ contract TokenWithBondingCurve is
         uint256 usdAdaptedPrice = _getUsdValue(priceFeed, price);
         _mint(_from, usdAdaptedPrice);
 
-        s_totalSupply += price;
+        s_totalSupply += usdAdaptedPrice;
 
-        emit TokenBought(_from, price);
+        emit TokenBought(_from, usdAdaptedPrice);
     }
 
     /// @dev Function that calculates the price of the token when buying by applying the following bonding curve:
