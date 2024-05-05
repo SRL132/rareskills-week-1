@@ -20,6 +20,7 @@ contract TokenWithSanctions is ERC20 {
     /// @dev Event to notify that an address has been banned, which will not be able to transfer or receive tokens
     /// @param bannedAddress The address that has been banned
     event AddressBanned(address indexed bannedAddress);
+
     /// @notice Event to notify that an address has been unbanned
     /// @dev Event to notify that an address has been unbanned, which will be able to transfer or receive tokens again
     /// @param bannedAddress The address that will no longer be banned
@@ -41,6 +42,7 @@ contract TokenWithSanctions is ERC20 {
             revert TokenWithSanctions__RecipientBanned();
         _;
     }
+
     /// @notice Constructor to create a token with a fixed supply
     /// @dev Constructor to create a token with a fixed supply, it implements ERC20 constructor and mints an immutable supply of tokens
     /// @param _owner address of the owner of the token
@@ -54,6 +56,7 @@ contract TokenWithSanctions is ERC20 {
         i_owner = _owner;
         _mint(_owner, FIXED_TOKEN_SUPPLY);
     }
+
     /// @notice Function that allows the owner to ban an address, which will not be able to transfer or receive tokens unless unbanned
     /// @dev Function that allows the owner to ban an address, which will not be able to transfer or receive tokens unless unbanned
     /// @param _address The address to be banned
@@ -61,6 +64,7 @@ contract TokenWithSanctions is ERC20 {
         s_bannedAddresses[_address] = true;
         emit AddressBanned(_address);
     }
+
     /// @notice Function that allows the owner to unban an address, which will be able to transfer or receive tokens again
     /// @dev Function that allows the owner to unban an address, which will be able to transfer or receive tokens again
     /// @param _address The address to be unbanned
@@ -68,6 +72,7 @@ contract TokenWithSanctions is ERC20 {
         s_bannedAddresses[_address] = false;
         emit AddressUnbanned(_address);
     }
+
     /// @notice Function that allows non-banned addresses to transfer tokens
     /// @dev Function that allows addresses not in s_bannedAddresses to transfer tokens
     /// @param _recipient The address of the recipient
@@ -85,6 +90,7 @@ contract TokenWithSanctions is ERC20 {
     {
         return super.transfer(_recipient, _amount);
     }
+
     /// @notice Function that allows non-banned addresses to transfer and receive tokens on behalf of another address
     /// @dev Function that allows addresses not in s_bannedAddresses to transfer and receive tokens on behalf of another address
     /// @param _sender The address whose tokens will be transferred

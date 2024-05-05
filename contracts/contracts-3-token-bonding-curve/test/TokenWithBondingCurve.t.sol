@@ -5,93 +5,104 @@ import {Test, console} from "forge-std/Test.sol";
 import {TokenWithBondingCurve} from "../src/TokenWithBondingCurve.sol";
 import {DeployTokenWithBondingCurve} from "../script/DeployTokenWithBondingCurve.s.sol";
 import {PayableToken} from "./mocks/ERC1363.sol";
+import {HelperConfig} from "../script/HelperConfig.s.sol";
 
 contract TokenWithBondingCurveTest is Test {
     TokenWithBondingCurve public token;
-    PayableToken public erc1363;
+    DeployTokenWithBondingCurve public deployer;
+    PayableToken public wethErc1363;
+    PayableToken public wbtcErc1363;
+
+    address[] public tokenAddresses;
+    address[] public priceFeedAddresses;
 
     string public constant NAME = "TokenWithBondingCurve";
     string public constant SYMBOL = "TBC";
-    address[] public tokenAddresses;
-    uint256[] public prices;
     address public owner = makeAddr("OWNER");
     uint256 public constant ERC_1363_INITIAL_SUPPLY = 1 ether;
     uint256 public constant TEST_MAX_PRICE = 1000;
+    uint256 public constant TEST_MOCK_WBTC_VALUE = 1000;
+    uint256 public constant TEST_MOCK_WETH_VALUE = 2000;
+    uint256 public constant TEST_MOCK_USD_VALUE = 1_000_000_000;
 
-    function setUp() public {
-        tokenAddresses = new address[](2);
-        tokenAddresses[0] = address(0x1);
-        tokenAddresses[1] = address(0x2);
-        prices = new uint256[](2);
-        prices[0] = 1;
-        prices[1] = 2;
+    function setUp() external {
+        deployer = new DeployTokenWithBondingCurve();
+        (, HelperConfig helperConfig) = deployer.run();
+        (
+            address wethUsdPriceFeed,
+            address wbtcUsdPriceFeed,
+            ,
+            ,
+
+        ) = helperConfig.activeNetworkConfig();
+
+        priceFeedAddresses = [wethUsdPriceFeed, wbtcUsdPriceFeed];
         vm.startPrank(owner);
-        erc1363 = new PayableToken();
-        tokenAddresses[0] = address(erc1363);
-        token = new TokenWithBondingCurve(NAME, SYMBOL, tokenAddresses, prices);
-        vm.stopPrank();
-    }
-
-    function testRevertsIfAddressAndPriceNotSameLength() public {
-        vm.prank(owner);
-        vm.expectRevert();
-        new TokenWithBondingCurve(
+        wethErc1363 = new PayableToken();
+        wbtcErc1363 = new PayableToken();
+        tokenAddresses = [address(wethErc1363), address(wbtcErc1363)];
+        token = new TokenWithBondingCurve(
             NAME,
             SYMBOL,
             tokenAddresses,
-            new uint256[](1)
+            priceFeedAddresses
         );
+
+        vm.stopPrank();
     }
 
     function testCanBuyWithERC1363() public {
         vm.prank(owner);
-        erc1363.transferAndCall(address(token), 3, abi.encode(TEST_MAX_PRICE));
+        wethErc1363.transferAndCall(
+            address(token),
+            3,
+            abi.encode(TEST_MAX_PRICE)
+        );
         assertEq(token.balanceOf(owner), 18);
     }
 
     function testCanSellForERC1363() public {
         vm.startPrank(owner);
-        erc1363.transferAndCall(address(token), 3, abi.encode(TEST_MAX_PRICE));
-        token.sellFor(token.balanceOf(owner), address(erc1363), 3);
-        assertEq(erc1363.balanceOf(owner), ERC_1363_INITIAL_SUPPLY);
+        wethErc1363.transferAndCall(
+            address(token),
+            3,
+            abi.encode(TEST_MAX_PRICE)
+        );
+        token.sellFor(token.balanceOf(owner), address(wethErc1363), 3);
+        assertEq(wethErc1363.balanceOf(owner), ERC_1363_INITIAL_SUPPLY);
     }
 
     function testRevertsIfMaxPriceExceedsMaxPrice() public {
         vm.prank(owner);
         vm.expectRevert();
-        erc1363.transferAndCall(address(token), 1, abi.encode(0));
+        wethErc1363.transferAndCall(address(token), 1, abi.encode(0));
     }
 
     function testRevertsIfTokenNotSupported() public {
         vm.prank(owner);
         vm.expectRevert();
-        erc1363.transferAndCall(address(0), 1, abi.encode(TEST_MAX_PRICE));
+        wethErc1363.transferAndCall(address(0), 1, abi.encode(TEST_MAX_PRICE));
     }
 
     function testRevertsIfAmountIsZero() public {
         vm.prank(owner);
         vm.expectRevert();
-        erc1363.transferAndCall(address(token), 0, abi.encode(TEST_MAX_PRICE));
+        wethErc1363.transferAndCall(
+            address(token),
+            0,
+            abi.encode(TEST_MAX_PRICE)
+        );
     }
 
     function testRevertsIfMinimumPriceTooHigh() public {
         vm.startPrank(owner);
-        erc1363.transferAndCall(address(token), 1, abi.encode(TEST_MAX_PRICE));
+        wethErc1363.transferAndCall(
+            address(token),
+            1,
+            abi.encode(TEST_MAX_PRICE)
+        );
         vm.expectRevert();
-        token.sellFor(1, address(erc1363), 10);
-    }
-
-    function testGetTokenAddresses() public view {
-        assertEq(token.getTokenAddresses(), tokenAddresses);
-    }
-
-    function testDeployTokenWithBondingCurve() public {
-        vm.prank(owner);
-        DeployTokenWithBondingCurve deployTokenWithBondingCurve = new DeployTokenWithBondingCurve();
-        (
-            TokenWithBondingCurve tokenWithBondingCurve,
-            PayableToken erc1363
-        ) = deployTokenWithBondingCurve.run();
+        token.sellFor(1, address(wethErc1363), 10);
     }
 
     function testRevertsIfDirectUserCallToOnTransferReceived() public {
@@ -104,5 +115,48 @@ contract TokenWithBondingCurveTest is Test {
         vm.prank(owner);
         vm.expectRevert();
         token.tokensReceived(owner, owner, owner, 1, "", "");
+    }
+
+    function testGetTokenPriceFeed() public {
+        assertEq(
+            token.getTokenPriceFeed(address(wethErc1363)),
+            priceFeedAddresses[0]
+        );
+        assertEq(
+            token.getTokenPriceFeed(address(wbtcErc1363)),
+            priceFeedAddresses[1]
+        );
+    }
+
+    function testGetUsdValue() public {
+        assertEq(
+            token.getUsdValue(address(wethErc1363), 1),
+            TEST_MOCK_WETH_VALUE
+        );
+        assertEq(
+            token.getUsdValue(address(wbtcErc1363), 1),
+            TEST_MOCK_WBTC_VALUE
+        );
+    }
+
+    function testGetTokenAddresse() public {
+        assertEq(token.getTokenAddresses(), tokenAddresses);
+    }
+
+    function testGetTokenAmountFromUsd() public {
+        assertEq(
+            token.getTokenAmountFromUsd(
+                address(wethErc1363),
+                TEST_MOCK_USD_VALUE
+            ),
+            TEST_MOCK_USD_VALUE / TEST_MOCK_WETH_VALUE
+        );
+        assertEq(
+            token.getTokenAmountFromUsd(
+                address(wbtcErc1363),
+                TEST_MOCK_USD_VALUE
+            ),
+            TEST_MOCK_USD_VALUE / TEST_MOCK_WBTC_VALUE
+        );
     }
 }
