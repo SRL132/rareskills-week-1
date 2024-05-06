@@ -9,10 +9,10 @@ import {ERC165Checker} from "@openzeppelin/utils/introspection/ERC165Checker.sol
 import {ReentrancyGuard} from "@openzeppelin/utils/ReentrancyGuard.sol";
 
 //TODO: Revise ERC20 vulnerabilities to see if there are more wins
-/// @title Contract that implments an untrusted escrow
+/// @title Contract that implments an untrusted escrow with security enhancements
 /// @author Sergi Roca Laguna
 /// @notice Contract where a buyer can put an arbitrary ERC20 token into a contract and a seller can withdraw it 3 days later
-/// @dev This contract implements openzeppelin's ReentrancyGuard and ERC165 as well as SafeERC20 functions for enhanced security
+/// @dev This contract implements openzeppelin's ReentrancyGuard and ERC165 as well as SafeERC20 functions and for enhanced security
 contract UntrustedEscrow is ERC165, ReentrancyGuard {
     using ERC165Checker for address;
     using SafeERC20 for IERC20;
@@ -83,12 +83,13 @@ contract UntrustedEscrow is ERC165, ReentrancyGuard {
             revert UntrustedEscrow__NotEnoughMoney();
         }
         s_depositBalances[_user][_token].amount -= _amount;
-        IERC20(_token).safeTransfer(msg.sender, _amount);
 
         (bool success, ) = _user.call{value: msg.value}("");
         if (!success) {
             revert UntrustedEscrow__TransferFailed();
         }
+        IERC20(_token).safeTransfer(msg.sender, _amount);
+
         emit Withdraw(_user, _token, _amount);
     }
 
