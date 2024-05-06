@@ -23,6 +23,8 @@ contract UntrustedEscrow is ERC165, ReentrancyGuard {
     error UntrustedEscrow__NotEnoughMoney();
     error UntrustedEscrow__NotAContract();
     error UntrustedEscrow__NotERC20();
+    error UntrustedEscrow__ZeroAmountSent();
+    error UntrustedEscrow__CannotUpdateSaleBefore4Days();
 
     struct Deposit {
         address user;
@@ -86,7 +88,7 @@ contract UntrustedEscrow is ERC165, ReentrancyGuard {
         emit Withdraw(_user, _token, _amount);
     }
 
-    /// @notice This function allows a buyer to deposit tokens into the contract
+    /// @notice This function allows a buyer to deposit tokens into the contract, to avoid malicious delaying, it can only be updated after 4 days so that sellers have a chance to withdraw
     /// @dev This function allows a buyer to deposit tokens into the contract. The function implements nonReentrant to avoid reentrancy attacks, it also applies CEI pattern for enhanced security
     /// @param _tokenAddress The address of the token to deposit
     /// @param _amount The amount of tokens to deposit
@@ -98,6 +100,19 @@ contract UntrustedEscrow is ERC165, ReentrancyGuard {
     ) external nonReentrant {
         if (!_tokenAddress.supportsInterface(type(IERC20).interfaceId)) {
             revert UntrustedEscrow__NotERC20();
+        }
+
+        if (_amount == 0) {
+            revert UntrustedEscrow__ZeroAmountSent();
+        }
+
+        if (
+            s_depositBalances[msg.sender][_tokenAddress].timestamp > 0 &&
+            block.timestamp -
+                s_depositBalances[msg.sender][_tokenAddress].timestamp <
+            4 days
+        ) {
+            revert UntrustedEscrow__CannotUpdateSaleBefore4Days();
         }
 
         s_depositBalances[msg.sender][_tokenAddress].amount += _amount;

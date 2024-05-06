@@ -79,4 +79,18 @@ contract CounterTest is Test {
         vm.expectRevert();
         untrustedEscrow.buyerDeposit(address(0), 1, 20);
     }
+
+    function testRevertsIfDepositZeroAmount() public hasApproved {
+        vm.prank(buyer);
+        vm.expectRevert();
+        untrustedEscrow.buyerDeposit(address(erc20), 0, 20);
+    }
+
+    function testRevertsIfUpdateDepositTooSoon() public hasApproved {
+        vm.prank(buyer);
+        untrustedEscrow.buyerDeposit(address(erc20), 1, 20);
+        vm.prank(buyer);
+        vm.expectRevert();
+        untrustedEscrow.buyerDeposit(address(erc20), 1, 20);
+    }
 }
