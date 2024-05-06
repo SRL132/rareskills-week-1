@@ -8,10 +8,9 @@ import {IERC165} from "@openzeppelin/utils/introspection/IERC165.sol";
 import {ERC165Checker} from "@openzeppelin/utils/introspection/ERC165Checker.sol";
 import {ReentrancyGuard} from "@openzeppelin/utils/ReentrancyGuard.sol";
 
-//TODO: Revise ERC20 vulnerabilities to see if there are more wins
-/// @title Contract that implments an untrusted escrow with security enhancements
+/// @title Contract that implments an untrusted escrow with security enhancements.
 /// @author Sergi Roca Laguna
-/// @notice Contract where a buyer can put an arbitrary ERC20 token into a contract and a seller can withdraw it 3 days later
+/// @notice Contract where a buyer can put an arbitrary ERC20 token into a contract and a seller can withdraw it 3 days later. Tokens have to be approved by the owner before they can be used.
 /// @dev This contract implements openzeppelin's ReentrancyGuard and ERC165 as well as SafeERC20 functions and for enhanced security
 contract UntrustedEscrow is ERC165, ReentrancyGuard {
     using ERC165Checker for address;
@@ -33,8 +32,12 @@ contract UntrustedEscrow is ERC165, ReentrancyGuard {
         uint256 price;
     }
 
+    address immutable i_owner;
+
     mapping(address depositor => mapping(address => Deposit))
         public s_depositBalances;
+
+    mapping(address approvedToken => bool) public s_approvedTokens;
 
     /// @notice This is an event to notify that a deposit has been done
     /// @dev This event is activated when deposits are done and return the relevant data to be rendered or tracked
@@ -47,12 +50,33 @@ contract UntrustedEscrow is ERC165, ReentrancyGuard {
         uint256 amount
     );
 
+    /// @notice This is the constructor of the contract
+    /// @dev This constructor initializes the contract and sets the owner, only they will be able to approve tokens
+    /// @param _owner The address of the owner of the contract, only they will be able to approve tokens
+    constructor(address _owner) {
+        i_owner = _owner;
+    }
+
     /// @notice This is an event to notify that a withdrawal has been done
     /// @dev This event is activated when withdrawals are done and return the relevant data to be rendered or tracked
     /// @param user The address of the user that made the withdrawal
     /// @param token The address of the token that was withdrawn
     /// @param amount The amount of tokens withdrawn
     event Withdraw(address indexed user, address indexed token, uint256 amount);
+
+    modifier onlyOwner() {
+        if (msg.sender != i_owner) {
+            revert UntrustedEscrow__NotAContract();
+        }
+        _;
+    }
+
+    modifier onlyApprovedToken(address _token) {
+        if (!s_approvedTokens[_token]) {
+            revert UntrustedEscrow__NotValidERC20();
+        }
+        _;
+    }
 
     /// @notice This function allows a seller to withdraw tokens from the contract
     /// @dev This function allows a seller to withdraw tokens from the contract, it implements a nonReentrant modifier to avoid reentrancy attacks, it also applies CEI pattern for enhanced security
@@ -63,7 +87,7 @@ contract UntrustedEscrow is ERC165, ReentrancyGuard {
         address _user,
         address _token,
         uint256 _amount
-    ) external payable nonReentrant {
+    ) external payable nonReentrant onlyApprovedToken(_token) {
         if (_amount == 0) {
             revert UntrustedEscrow__ZeroAmountSent();
         }
@@ -106,7 +130,7 @@ contract UntrustedEscrow is ERC165, ReentrancyGuard {
         address _tokenAddress,
         uint256 _amount,
         uint256 _price
-    ) external nonReentrant {
+    ) external nonReentrant onlyApprovedToken(_tokenAddress) {
         if (!_tokenAddress.supportsInterface(type(IERC20).interfaceId)) {
             revert UntrustedEscrow__NotValidERC20();
         }
@@ -142,5 +166,19 @@ contract UntrustedEscrow is ERC165, ReentrancyGuard {
         }
 
         emit DepositDone(msg.sender, _tokenAddress, _amount);
+    }
+
+    /// @notice This function allows the owner to approve tokens to be used in the contract
+    /// @dev This function allows the owner to approve tokens to be used in the contract
+    /// @param _token The address of the token to approve
+    function approveToken(address _token) external onlyOwner {
+        s_approvedTokens[_token] = true;
+    }
+
+    /// @notice This function allows the owner to revoke tokens to be used in the contract
+    /// @dev This function allows the owner to revoke tokens to be used in the contract
+    /// @param _token The address of the token to revoke
+    function revokeToken(address _token) external onlyOwner {
+        s_approvedTokens[_token] = false;
     }
 }

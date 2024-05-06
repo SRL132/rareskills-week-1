@@ -16,11 +16,17 @@ contract CounterTest is Test {
     address public buyer = makeAddr("BUYER");
     address public seller = makeAddr("SELLER");
     address public hacker = makeAddr("HACKER");
+
+    // This is a fake balance of the malicious ERC20 token to try to trick receiving contract into believing they have more than they actually do
+    uint256 public constant FAKE_BALANCE_OF = 5;
+
     function setUp() public {
         deployUntrustedEscrow = new DeployUntrustedEscrow();
-        untrustedEscrow = deployUntrustedEscrow.run();
-        vm.prank(owner);
+        untrustedEscrow = deployUntrustedEscrow.run(owner);
+        vm.startPrank(owner);
         erc20 = new MyERC20(owner, "test", "TST");
+        untrustedEscrow.approveToken(address(erc20));
+        vm.stopPrank();
         vm.prank(hacker);
         maliciousErc20 = new MaliciousERC20(hacker, "malicious", "MAL");
     }
@@ -117,12 +123,49 @@ contract CounterTest is Test {
         untrustedEscrow.sellerWithdraw(buyer, address(erc20), 1);
     }
 
-    function testMaliciousERC20() public hasApproved {
+    function testMaliciousERC20CannotHackArbitrarely() public hasApproved {
         vm.startPrank(hacker);
         maliciousErc20.mint(hacker, 1);
         maliciousErc20.approve(address(untrustedEscrow), 1);
         vm.expectRevert();
         untrustedEscrow.buyerDeposit(address(maliciousErc20), 1, 20);
         vm.stopPrank();
+    }
+
+    function onlyOwnerCanApproveRevokeTokens() public {
+        vm.startPrank(owner);
+        untrustedEscrow.approveToken(address(erc20));
+        untrustedEscrow.revokeToken(address(erc20));
+        untrustedEscrow.approveToken(address(erc20));
+        vm.stopPrank();
+        assert(untrustedEscrow.s_approvedTokens(address(erc20)));
+        untrustedEscrow.revokeToken(address(erc20));
+        assert(!untrustedEscrow.s_approvedTokens(address(erc20)));
+        vm.startPrank(hacker);
+        vm.expectRevert();
+        untrustedEscrow.revokeToken(address(erc20));
+        vm.expectRevert();
+        untrustedEscrow.approveToken(address(maliciousErc20));
+    }
+
+    function testRevertsIfDepositUnapprovedToken() public hasApproved {
+        vm.prank(hacker);
+        vm.expectRevert();
+        untrustedEscrow.buyerDeposit(
+            address(maliciousErc20),
+            1,
+            FAKE_BALANCE_OF
+        );
+    }
+
+    function testRevertsIfWithdrawUnapprovedToken() public hasApproved {
+        vm.prank(buyer);
+        untrustedEscrow.buyerDeposit(address(erc20), 1, 20);
+        vm.prank(owner);
+        untrustedEscrow.revokeToken(address(erc20));
+        vm.warp(block.timestamp + 4 days);
+        vm.prank(seller);
+        vm.expectRevert();
+        untrustedEscrow.sellerWithdraw(buyer, address(maliciousErc20), 1);
     }
 }

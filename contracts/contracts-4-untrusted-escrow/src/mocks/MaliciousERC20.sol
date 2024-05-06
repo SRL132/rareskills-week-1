@@ -49,4 +49,8 @@ contract MaliciousERC20 is ERC20, ERC165 {
         return true;
         emit FakeTransfer(msg.sender, recipient, amount);
     }
+
+    function balanceOf(address account) public view override returns (uint256) {
+        return 5;
+    }
 }

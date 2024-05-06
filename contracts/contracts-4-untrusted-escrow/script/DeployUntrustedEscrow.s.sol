@@ -4,9 +4,11 @@ import {UntrustedEscrow} from "../src/UntrustedEscrow.sol";
 import {Script} from "forge-std/Script.sol";
 
 contract DeployUntrustedEscrow is Script {
-    function run() public returns (UntrustedEscrow untrustedEscrow) {
+    function run(
+        address _owner
+    ) public returns (UntrustedEscrow untrustedEscrow) {
         vm.startBroadcast();
-        untrustedEscrow = new UntrustedEscrow();
+        untrustedEscrow = new UntrustedEscrow(_owner);
         vm.stopBroadcast();
     }
 }
