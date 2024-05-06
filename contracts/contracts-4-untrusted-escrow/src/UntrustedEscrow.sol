@@ -50,19 +50,22 @@ contract UntrustedEscrow is ERC165, ReentrancyGuard {
         uint256 amount
     );
 
-    /// @notice This is the constructor of the contract
-    /// @dev This constructor initializes the contract and sets the owner, only they will be able to approve tokens
-    /// @param _owner The address of the owner of the contract, only they will be able to approve tokens
-    constructor(address _owner) {
-        i_owner = _owner;
-    }
-
     /// @notice This is an event to notify that a withdrawal has been done
     /// @dev This event is activated when withdrawals are done and return the relevant data to be rendered or tracked
     /// @param user The address of the user that made the withdrawal
     /// @param token The address of the token that was withdrawn
     /// @param amount The amount of tokens withdrawn
     event Withdraw(address indexed user, address indexed token, uint256 amount);
+
+    /// @notice This is an event to notify that a token has been approved
+    /// @dev This event is activated when tokens are approved and return the relevant address to be rendered or tracked
+    /// @param token The address of the token that was approved
+    event TokenApproved(address indexed token);
+
+    /// @notice This is an event to notify that a token has been revoked
+    /// @dev This event is activated when tokens are revoked and return the relevant address to be rendered or tracked
+    /// @param token The address of the token that was revoked
+    event TokenRevoked(address indexed token);
 
     modifier onlyOwner() {
         if (msg.sender != i_owner) {
@@ -76,6 +79,13 @@ contract UntrustedEscrow is ERC165, ReentrancyGuard {
             revert UntrustedEscrow__NotValidERC20();
         }
         _;
+    }
+
+    /// @notice This is the constructor of the contract
+    /// @dev This constructor initializes the contract and sets the owner, only they will be able to approve tokens
+    /// @param _owner The address of the owner of the contract, only they will be able to approve tokens
+    constructor(address _owner) {
+        i_owner = _owner;
     }
 
     /// @notice This function allows a seller to withdraw tokens from the contract
@@ -173,6 +183,7 @@ contract UntrustedEscrow is ERC165, ReentrancyGuard {
     /// @param _token The address of the token to approve
     function approveToken(address _token) external onlyOwner {
         s_approvedTokens[_token] = true;
+        emit TokenApproved(_token);
     }
 
     /// @notice This function allows the owner to revoke tokens to be used in the contract
@@ -180,5 +191,6 @@ contract UntrustedEscrow is ERC165, ReentrancyGuard {
     /// @param _token The address of the token to revoke
     function revokeToken(address _token) external onlyOwner {
         s_approvedTokens[_token] = false;
+        emit TokenRevoked(_token);
     }
 }
