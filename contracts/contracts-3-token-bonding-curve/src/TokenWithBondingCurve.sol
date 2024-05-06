@@ -32,7 +32,6 @@ contract TokenWithBondingCurve is
     error TokenWithBondingCurve__TokensToReturnBelowMinimumSet();
 
     //STORAGE VARIABLES
-    uint256 public s_totalSupply = 0;
 
     //DECIMALS AND PRECISION
     uint256 private constant PRECISION = 1e18;
@@ -132,7 +131,7 @@ contract TokenWithBondingCurve is
         );
         uint256 usdAdaptedTotalSupply = _getTokenAmountFromUsd(
             _tokenAddress,
-            s_totalSupply * WEI_CONVERTER
+            totalSupply() * WEI_CONVERTER
         );
         uint256 tokensToReturn = _calculateSellPrice(
             usdAdaptedTokensToReturn / 100,
@@ -143,9 +142,8 @@ contract TokenWithBondingCurve is
             revert TokenWithBondingCurve__TokensToReturnBelowMinimumSet();
         }
 
-        s_totalSupply -= _amountOfTBCToSell;
-        IERC20(_tokenAddress).safeTransfer(msg.sender, tokensToReturn);
         _burn(msg.sender, _amountOfTBCToSell);
+        IERC20(_tokenAddress).safeTransfer(msg.sender, tokensToReturn);
 
         emit TokenSold(msg.sender, _amountOfTBCToSell);
     }
@@ -173,8 +171,6 @@ contract TokenWithBondingCurve is
         uint256 usdAdaptedPrice = _getUsdValue(priceFeed, price);
         _mint(_from, usdAdaptedPrice);
 
-        s_totalSupply += usdAdaptedPrice;
-
         emit TokenBought(_from, usdAdaptedPrice);
     }
 
@@ -186,8 +182,8 @@ contract TokenWithBondingCurve is
     function _calculateBuyPrice(
         uint256 _amount
     ) private view returns (uint256 _amountOfTokensBought) {
-        uint256 latestPrice = SLOPE_FACTOR * s_totalSupply ** 2;
-        uint256 newPrice = SLOPE_FACTOR * (s_totalSupply + _amount) ** 2;
+        uint256 latestPrice = SLOPE_FACTOR * totalSupply() ** 2;
+        uint256 newPrice = SLOPE_FACTOR * (totalSupply() + _amount) ** 2;
         _amountOfTokensBought = newPrice - latestPrice;
     }
 
