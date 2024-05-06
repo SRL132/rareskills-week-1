@@ -22,7 +22,7 @@ contract UntrustedEscrow is ERC165, ReentrancyGuard {
     error UntrustedEscrow__TransferFailed();
     error UntrustedEscrow__NotEnoughMoney();
     error UntrustedEscrow__NotAContract();
-    error UntrustedEscrow__NotERC20();
+    error UntrustedEscrow__NotValidERC20();
     error UntrustedEscrow__ZeroAmountSent();
     error UntrustedEscrow__CannotUpdateSaleBefore4Days();
 
@@ -103,7 +103,7 @@ contract UntrustedEscrow is ERC165, ReentrancyGuard {
         uint256 _price
     ) external nonReentrant {
         if (!_tokenAddress.supportsInterface(type(IERC20).interfaceId)) {
-            revert UntrustedEscrow__NotERC20();
+            revert UntrustedEscrow__NotValidERC20();
         }
 
         if (_amount == 0) {
