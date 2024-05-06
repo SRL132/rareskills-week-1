@@ -53,7 +53,7 @@ contract UntrustedEscrow is ERC165, ReentrancyGuard {
     event Withdraw(address indexed user, address indexed token, uint256 amount);
 
     /// @notice This function allows a seller to withdraw tokens from the contract
-    /// @dev This function allows a seller to withdraw tokens from the contract, it implements a nonReentrant modifier to avoid reentrancy attacks
+    /// @dev This function allows a seller to withdraw tokens from the contract, it implements a nonReentrant modifier to avoid reentrancy attacks, it also applies CEI pattern for enhanced security
     /// @param _user The address of the user that made the deposit
     /// @param _token The address of the token that was deposited
     /// @param _amount The amount of tokens to withdraw
@@ -76,10 +76,9 @@ contract UntrustedEscrow is ERC165, ReentrancyGuard {
         if (msg.value < (s_depositBalances[_user][_token].price * _amount)) {
             revert UntrustedEscrow__NotEnoughMoney();
         }
-
+        s_depositBalances[_user][_token].amount -= _amount;
         IERC20(_token).safeTransfer(msg.sender, _amount);
 
-        s_depositBalances[_user][_token].amount -= _amount;
         (bool success, ) = _user.call{value: msg.value}("");
         if (!success) {
             revert UntrustedEscrow__TransferFailed();
@@ -88,7 +87,7 @@ contract UntrustedEscrow is ERC165, ReentrancyGuard {
     }
 
     /// @notice This function allows a buyer to deposit tokens into the contract
-    /// @dev This function allows a buyer to deposit tokens into the contract. The function implements nonReentrant to avoid reentrancy attacks
+    /// @dev This function allows a buyer to deposit tokens into the contract. The function implements nonReentrant to avoid reentrancy attacks, it also applies CEI pattern for enhanced security
     /// @param _tokenAddress The address of the token to deposit
     /// @param _amount The amount of tokens to deposit
     /// @param _price The price of the tokens
@@ -101,18 +100,18 @@ contract UntrustedEscrow is ERC165, ReentrancyGuard {
             revert UntrustedEscrow__NotERC20();
         }
 
-        IERC20(_tokenAddress).safeTransferFrom(
-            msg.sender,
-            address(this),
-            _amount
-        );
-
         s_depositBalances[msg.sender][_tokenAddress].amount += _amount;
         s_depositBalances[msg.sender][_tokenAddress].timestamp = block
             .timestamp;
         s_depositBalances[msg.sender][_tokenAddress].user = msg.sender;
         s_depositBalances[msg.sender][_tokenAddress].amount = _amount;
         s_depositBalances[msg.sender][_tokenAddress].price = _price;
+
+        IERC20(_tokenAddress).safeTransferFrom(
+            msg.sender,
+            address(this),
+            _amount
+        );
 
         emit DepositDone(msg.sender, _tokenAddress, _amount);
     }
