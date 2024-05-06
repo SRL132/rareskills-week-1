@@ -87,7 +87,7 @@ contract TokenWithBondingCurve is
         address _from,
         uint256 _amount,
         bytes memory _data
-    ) external returns (bytes4) {
+    ) external nonReentrant returns (bytes4) {
         if (s_tokenUsdPriceFeeds[msg.sender] == address(0)) {
             revert TokenWithBondingCurve__TokenNotSupported();
         }
@@ -104,7 +104,7 @@ contract TokenWithBondingCurve is
         uint256 _amount,
         bytes calldata _userData,
         bytes calldata _operatorData
-    ) external {
+    ) external nonReentrant {
         if (s_tokenUsdPriceFeeds[msg.sender] == address(0)) {
             revert TokenWithBondingCurve__TokenNotSupported();
         }
