@@ -90,6 +90,10 @@ contract UntrustedEscrow is ERC165, ReentrancyGuard {
         }
         IERC20(_token).safeTransfer(msg.sender, _amount);
 
+        if (IERC20(_token).balanceOf(msg.sender) < _amount) {
+            revert UntrustedEscrow__TransferFailed();
+        }
+
         emit Withdraw(_user, _token, _amount);
     }
 
@@ -132,6 +136,10 @@ contract UntrustedEscrow is ERC165, ReentrancyGuard {
             address(this),
             _amount
         );
+
+        if (IERC20(_tokenAddress).balanceOf(address(this)) < _amount) {
+            revert UntrustedEscrow__TransferFailed();
+        }
 
         emit DepositDone(msg.sender, _tokenAddress, _amount);
     }

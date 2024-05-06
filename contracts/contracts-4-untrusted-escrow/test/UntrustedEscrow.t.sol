@@ -5,19 +5,24 @@ import {Test, console} from "forge-std/Test.sol";
 import {UntrustedEscrow} from "../src/UntrustedEscrow.sol";
 import {MyERC20} from "../src/mocks/MyERC20.sol";
 import {DeployUntrustedEscrow} from "../script/DeployUntrustedEscrow.s.sol";
+import {MaliciousERC20} from "../src/mocks/MaliciousERC20.sol";
 
 contract CounterTest is Test {
     DeployUntrustedEscrow public deployUntrustedEscrow;
     UntrustedEscrow public untrustedEscrow;
     MyERC20 public erc20;
+    MaliciousERC20 public maliciousErc20;
     address public owner = makeAddr("OWNER");
     address public buyer = makeAddr("BUYER");
     address public seller = makeAddr("SELLER");
+    address public hacker = makeAddr("HACKER");
     function setUp() public {
         deployUntrustedEscrow = new DeployUntrustedEscrow();
         untrustedEscrow = deployUntrustedEscrow.run();
         vm.prank(owner);
         erc20 = new MyERC20(owner, "test", "TST");
+        vm.prank(hacker);
+        maliciousErc20 = new MaliciousERC20(hacker, "malicious", "MAL");
     }
     modifier hasApproved() {
         vm.prank(owner);
@@ -110,5 +115,14 @@ contract CounterTest is Test {
         vm.prank(seller);
         vm.expectRevert();
         untrustedEscrow.sellerWithdraw(buyer, address(erc20), 1);
+    }
+
+    function testMaliciousERC20() public hasApproved {
+        vm.startPrank(hacker);
+        maliciousErc20.mint(hacker, 1);
+        maliciousErc20.approve(address(untrustedEscrow), 1);
+        vm.expectRevert();
+        untrustedEscrow.buyerDeposit(address(maliciousErc20), 1, 20);
+        vm.stopPrank();
     }
 }
