@@ -64,6 +64,10 @@ contract UntrustedEscrow is ERC165, ReentrancyGuard {
         address _token,
         uint256 _amount
     ) external payable nonReentrant {
+        if (_amount == 0) {
+            revert UntrustedEscrow__ZeroAmountSent();
+        }
+
         if (
             block.timestamp - s_depositBalances[_user][_token].timestamp <
             3 days
