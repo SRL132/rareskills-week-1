@@ -64,14 +64,3 @@ $ forge --help
 $ anvil --help
 $ cast --help
 ```
-
-
-
-
-        //total supply of TBC
-        uint256 totalTokenSupply = s_totalSupply + amount;
-        //f = function
-        // where x is the total token supply
-        // and m is the slope factor
-        //f(x) = m * (x^2)
-        newPrice = SLOPE_FACTOR * totalTokenSupply * totalTokenSupply;
