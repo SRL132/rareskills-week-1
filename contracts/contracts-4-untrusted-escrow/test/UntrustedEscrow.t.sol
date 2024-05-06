@@ -102,4 +102,13 @@ contract CounterTest is Test {
         vm.expectRevert();
         untrustedEscrow.sellerWithdraw(buyer, address(erc20), 0);
     }
+
+    function testRevertsIfWithDrawWithNotEnoughMoney() public hasApproved {
+        vm.prank(buyer);
+        untrustedEscrow.buyerDeposit(address(erc20), 1, 20);
+        vm.warp(block.timestamp + 3 days);
+        vm.prank(seller);
+        vm.expectRevert();
+        untrustedEscrow.sellerWithdraw(buyer, address(erc20), 1);
+    }
 }
