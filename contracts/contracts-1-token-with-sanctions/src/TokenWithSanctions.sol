@@ -13,7 +13,7 @@ error TokenWithSanctions__RecipientBanned();
 /// @dev This token implements an ERC20 with fixed token supply and the ability to ban addresses.
 contract TokenWithSanctions is ERC20 {
     uint256 public constant FIXED_TOKEN_SUPPLY = 500;
-    address public i_owner;
+    address public immutable i_owner;
     mapping(address => bool) public s_bannedAddresses;
 
     /// @notice Event to notify that an address has been banned

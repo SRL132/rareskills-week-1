@@ -11,7 +11,7 @@ error TokenWithGodMode__NotOwner();
 /// @dev This token implements an ERC20 with fixed token supply and the ability for the owner to the owner to transfer tokens between addresses at will.
 contract TokenWithGodMode is ERC20 {
     uint256 public constant FIXED_TOKEN_SUPPLY = 500;
-    address public i_owner;
+    address public immutable i_owner;
 
     modifier onlyOwner() {
         if (msg.sender != i_owner) revert TokenWithGodMode__NotOwner();
