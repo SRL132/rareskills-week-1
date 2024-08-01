@@ -54,12 +54,13 @@ contract TokenWithBondingCurveTest is Test {
         vm.stopPrank();
     }
 
-    function testCanBuyWithERC1363() public {
+    function testCanBuyWithERC1363(uint256 amount) public {
         vm.prank(owner);
+        vm.assume(amount < 960653276687538929172835136434361334704054994071);
         wethErc1363.transferAndCall(
             address(token),
-            3,
-            abi.encode(TEST_MAX_PRICE)
+            amount,
+            abi.encode(1_000_000_000_000_000_000_000_000_000)
         );
         assertEq(
             token.balanceOf(owner),
@@ -77,12 +78,13 @@ contract TokenWithBondingCurveTest is Test {
         assertEq(token.balanceOf(owner), 2e36 * TEST_MOCK_WETH_VALUE);
     }
 
-    function testCanSellForERC1363() public {
+    function testCanSellForERC1363(uint256 amount) public {
         vm.startPrank(owner);
+        vm.assume(amount < 960653276687538929172835136434361334704054994071);
         wethErc1363.transferAndCall(
             address(token),
-            TEST_BUY_AMOUNT,
-            abi.encode(TEST_MAX_PRICE)
+            amount,
+            abi.encode(1_000_000_000_000_000_000_000_000_000)
         );
         token.sellFor(
             token.balanceOf(owner),
@@ -159,7 +161,7 @@ contract TokenWithBondingCurveTest is Test {
         );
     }
 
-    function testGetTokenAddresse() public view {
+    function testGetTokenAddresses() public view {
         assertEq(token.getTokenAddresses(), tokenAddresses);
     }
 
