@@ -31,3 +31,6 @@
 [submodule "contracts/contracts-3-token-bonding-curve/lib/chainlink-brownie-contracts"]
 	path = contracts/contracts-3-token-bonding-curve/lib/chainlink-brownie-contracts
 	url = https://github.com/smartcontractkit/chainlink-brownie-contracts
+[submodule "contracts/contracts-3-untrusted-escrow/lib/openzeppelin-contracts"]
+	path = contracts/contracts-3-untrusted-escrow/lib/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts
